@@ -10,7 +10,7 @@ import (
 	"github.com/imcrazytwkr/formdrain/constants"
 )
 
-var ErrInvalidForwardedPort = errors.New("X-Forwarded-Port header is invalid")
+var ErrInvalidForwardedPort = errors.New(constants.HeaderForwardedFor + " header is invalid")
 
 func ParseServerHost(r *http.Request) (string, error) {
 	serverUrl, err := ParseServerURL(r)

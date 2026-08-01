@@ -49,12 +49,21 @@ func writeHTML(ctx context.Context, w http.ResponseWriter, status int, name stri
 	setResponseContentType(w, m.ContentTypeHTML)
 	w.WriteHeader(status)
 
+	log := zerolog.Ctx(ctx)
+	if templates == nil {
+		log.Error().Str("template", name).Msg("templates are not loaded")
+		_, err := io.WriteString(w, http.StatusText(status))
+		if err != nil {
+			log.Error().Err(err).Msg("failed to write fallback plain-text response")
+		}
+		return
+	}
+
 	err := templates.ExecuteTemplate(w, name, params)
 	if err == nil {
 		return
 	}
 
-	log := zerolog.Ctx(ctx)
 	log.Error().Err(err).Msg("failed to render HTML response")
 
 	_, err = io.WriteString(w, http.StatusText(status))

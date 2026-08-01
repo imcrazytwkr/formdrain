@@ -1,57 +1,69 @@
 package httpserver
 
-import "html/template"
+import (
+	"fmt"
+	"html/template"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
+)
 
-var templates = template.Must(template.New("httpserver").Parse(`
-{{define "errors/generic.html"}}<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>{{.title}}</title>
-</head>
-<body>
-<h1>{{.status}} {{.title}}</h1>
-<p>{{.message}}</p>
-</body>
-</html>{{end}}
+const DefaultTemplateDirectory = "templates"
 
-{{define "errors/validation.html"}}<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>{{.Message}}</title>
-</head>
-<body>
-<h1>{{.Status}} {{.Message}}</h1>
-{{if .Errors}}
-<ul>
-{{range $field, $err := .Errors}}
-<li><strong>{{$field}}</strong>: {{$err}}</li>
-{{end}}
-</ul>
-{{end}}
-</body>
-</html>{{end}}
+var templates *template.Template
 
-{{define "form/success.html"}}<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>Success</title>
-</head>
-<body>
-<h1>Form submitted</h1>
-</body>
-</html>{{end}}
+func LoadTemplates() error {
+	exePath, err := os.Executable()
+	if err != nil {
+		return err
+	}
 
-{{define "form/redirect.html"}}<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>Redirecting</title>
-</head>
-<body>
-<p>Redirecting…</p>
-</body>
-</html>{{end}}
-`))
+	return LoadTemplatesFromPath(filepath.Join(filepath.Dir(exePath), DefaultTemplateDirectory))
+}
+
+// LoadTemplatesFromPath parses *.html files under dir. Template names are paths relative
+// to dir using forward slashes (e.g. "errors/generic.html").
+func LoadTemplatesFromPath(dir string) error {
+	root := template.New("httpserver")
+	var found bool
+
+	// I am extremely disappointed this has to be done manually
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() || !strings.HasSuffix(d.Name(), ".html") {
+			return nil
+		}
+
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		name := filepath.ToSlash(rel)
+		_, err = root.New(name).Parse(string(data))
+		if err != nil {
+			return fmt.Errorf("parse template %q: %w", name, err)
+		}
+
+		found = true
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if !found {
+		return fmt.Errorf("no html templates found under %q", dir)
+	}
+
+	templates = root
+	return nil
+}

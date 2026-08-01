@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -69,7 +70,10 @@ func TestHandleError_ServerHidesMessage(t *testing.T) {
 }
 
 func TestHandleResponse_ValidationHTML(t *testing.T) {
-	t.Parallel()
+	err := httpserver.LoadTemplatesFromPath(filepath.Join("..", "..", "templates"))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	w := httptest.NewRecorder()
 	httpserver.HandleResponse(context.Background(), w, http.StatusBadRequest, "errors/validation.html", map[string]any{
