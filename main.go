@@ -25,7 +25,7 @@ import (
 )
 
 func main() {
-	if os.Getenv("GIN_MODE") != "release" {
+	if os.Getenv("LOG_MODE") == "release" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
 	}
 
