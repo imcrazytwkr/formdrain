@@ -3,7 +3,6 @@ package bodyparser
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"strings"
 )
 
@@ -65,14 +64,14 @@ func parseArray(arr []any) ([]any, error) {
 		kind := classifyValue(v)
 		switch kind {
 		case kindArray, kindObject:
-			return nil, errors.New("nested structures are not allowed")
+			return nil, ErrNestedStructuresNotAllowed
 		case kindNull:
 			continue
 		default:
 			if i == 0 {
 				lastKind = kind
 			} else if kind != lastKind {
-				return nil, errors.New("combined-type arrays are not allowed")
+				return nil, ErrCombinedTypeArraysNotAllowed
 			}
 
 			value, err := parseSimpleValue(v)

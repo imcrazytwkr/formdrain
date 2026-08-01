@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,7 +32,7 @@ INSERT INTO form_responses (
 
 func (r *sqliteFormResponseRepository) SaveFormResponse(ctx context.Context, response *fr.FormResponse) (string, error) {
 	if response == nil {
-		return "", fmt.Errorf("form response is nil")
+		return "", ErrEmptyFormResponse
 	}
 
 	// @NOTE: do not modify source object until insertion has succeeded
