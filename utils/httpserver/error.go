@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	m "github.com/imcrazytwkr/formdrain/models/http"
+	"github.com/imcrazytwkr/formdrain/validation"
 	"github.com/rs/zerolog"
 )
 
@@ -21,6 +22,17 @@ func HandleError(ctx context.Context, w http.ResponseWriter, status int, err err
 
 	// Server errors should be replaced with their generic forms
 	HandleStatus(ctx, w, status)
+}
+
+// HandleValidationError writes a field-keyed JSON body for validation failures.
+// Non-JSON responses fall back to HandleError.
+func HandleValidationError(ctx context.Context, w http.ResponseWriter, status int, err error) {
+	if responseFormat(w) == m.ContentTypeJSON {
+		writeJSON(ctx, w, status, validation.NewValidationErrorResponse(status, err))
+		return
+	}
+
+	HandleError(ctx, w, status, err)
 }
 
 func handleErrorMessage(ctx context.Context, w http.ResponseWriter, status int, message string) {

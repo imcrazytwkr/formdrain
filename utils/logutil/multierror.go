@@ -1,6 +1,7 @@
 package logutil
 
 import (
+	"github.com/imcrazytwkr/formdrain/utils/errorutil"
 	"github.com/rs/zerolog"
 )
 
@@ -16,9 +17,9 @@ type joinError interface {
  * that has a dedicated message.
  */
 func UnwrapErr(event *zerolog.Event, err error) *zerolog.Event {
-	e, ok := err.(joinError)
-	if ok {
-		return event.Errs(errorsFieldName, e.Unwrap())
+	errs, ok := errorutil.UnwrapMultiErr(err)
+	if ok && len(errs) > 0 {
+		return event.Errs(errorsFieldName, errs)
 	}
 
 	return event.Err(err)

@@ -11,6 +11,7 @@ import (
 	"github.com/imcrazytwkr/formdrain/utils/bodyparser"
 	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 	"github.com/imcrazytwkr/formdrain/utils/logutil"
+	"github.com/imcrazytwkr/formdrain/validation"
 )
 
 func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) {
@@ -86,11 +87,21 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	// Captcha tokens are not part of the field schema / stored payload.
+	delete(formData, "h-captcha")
+	delete(formData, "g-recaptcha")
+
+	payload, err := validation.ValidateFormPayload(formConfig.FieldSchema, formData)
+	if err != nil {
+		httpserver.HandleValidationError(ctx, w, http.StatusBadRequest, err)
+		return
+	}
+
 	responseId, err := r.formResponseRepository.SaveFormResponse(ctx, &form_response.FormResponse{
 		FormId:        formConfig.FormId,
 		SchemaVersion: formConfig.SchemaVersion,
 		ClientIP:      clientIP,
-		Payload:       formData,
+		Payload:       payload,
 	})
 	if err != nil {
 		log.Err(err).Str("form_id", formId).Msg("could not save response into DB")
@@ -100,7 +111,7 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 
 	log.Debug().Str("form_id", formId).Str("response_id", responseId).Msg("saved response")
 
-	err = r.notificaionService.Send(formConfig.Notifiers, formData)
+	err = r.notificaionService.Send(formConfig.Notifiers, payload)
 	if err != nil {
 		logutil.UnwrapErr(log.Error(), err).Msg("failed to send notifications")
 	}
