@@ -19,4 +19,4 @@ format:
 	go mod tidy
 
 test: format
-	go test -timeout 30s ./...
+	go test -timeout 30s ./... | sed '/^?/d'
