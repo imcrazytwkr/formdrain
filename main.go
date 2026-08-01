@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"net"
 	"net/http"
 	"os"
@@ -22,6 +23,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	_ "modernc.org/sqlite"
 )
 
 func main() {
@@ -44,6 +47,12 @@ func main() {
 	router.Use(middleware.RequestId())
 	router.Use(middleware.ResponseFormatParser(m.ContentTypeHTML, m.ContentTypeJSON))
 	router.Use(middleware.Recoverer())
+
+	sqliteDB, err := openSqlite()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to open sqlite database")
+	}
+	defer sqliteDB.Close()
 
 	mongoDb, err := getMongoDb()
 	if err != nil {
@@ -74,6 +83,31 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("server stopped")
 	}
+}
+
+func openSqlite() (*sql.DB, error) {
+	dbURL, err := getDBURL()
+	if err != nil {
+		return nil, err
+	}
+
+	path, err := sqliteFilePath(dbURL)
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.Ping()
+	if err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+
+	return db, nil
 }
 
 func getMongoDb(opts ...*options.DatabaseOptions) (*mongo.Database, error) {
