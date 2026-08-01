@@ -1,10 +1,8 @@
 package form_config
 
 import (
+	"encoding/json"
 	"fmt"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/bsontype"
 )
 
 type CaptchaType int8
@@ -34,17 +32,13 @@ func (c CaptchaType) String() string {
 	return toString[c]
 }
 
-func (c CaptchaType) MarshalBSONValue() (bsontype.Type, []byte, error) {
-	return bson.MarshalValue(c.String())
+func (c CaptchaType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.String())
 }
 
-func (c *CaptchaType) UnmarshalBSONValue(t bsontype.Type, b []byte) error {
-	if t != bsontype.String {
-		return fmt.Errorf("%q is not a valid captcha type field type", t)
-	}
-
+func (c *CaptchaType) UnmarshalJSON(b []byte) error {
 	var raw string
-	err := bson.Unmarshal(b, raw)
+	err := json.Unmarshal(b, &raw)
 	if err != nil {
 		return err
 	}

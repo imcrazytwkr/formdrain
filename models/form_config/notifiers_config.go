@@ -6,6 +6,6 @@ import (
 )
 
 type NotifiersConfig struct {
-	Discord    *discord.DiscordConfig       `bson:"discord"`
-	Sendinblue *sendinblue.SendinblueConfig `bson:"sendinblue"`
+	Discord    *discord.DiscordConfig       `json:"discord"`
+	Sendinblue *sendinblue.SendinblueConfig `json:"sendinblue"`
 }

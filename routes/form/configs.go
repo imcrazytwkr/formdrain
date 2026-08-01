@@ -2,6 +2,7 @@ package form
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/utils/httpserver"
@@ -26,13 +27,13 @@ func (r *formRouter) AttachFormConfigs(next http.Handler) http.Handler {
 			return
 		}
 
-		if len(formConfig.SiteId) < 1 {
-			log.Error().Str("form_id", formId).Msg("form config has no sideId ref")
+		if formConfig.SiteId < 1 {
+			log.Error().Str("form_id", formId).Msg("form config has no siteId ref")
 			httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
 			return
 		}
 
-		siteConfig, err := r.siteConfigRepository.GetSiteConfigById(ctx, formConfig.SiteId.String())
+		siteConfig, err := r.siteConfigRepository.GetSiteConfigById(ctx, strconv.FormatInt(formConfig.SiteId, 10))
 		if err != nil {
 			log.Err(err).Str("form_id", formId).Msg("error fetching site config for form")
 			httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)

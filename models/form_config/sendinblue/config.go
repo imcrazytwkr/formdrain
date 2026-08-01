@@ -3,9 +3,9 @@ package sendinblue
 import "github.com/imcrazytwkr/formdrain/models/common"
 
 type SendinblueConfig struct {
-	Recipients []*EmailContact  `bson:"recipients"`
-	Subject    string           `bson:"subject"`
-	Template   *common.Template `bson:"template"`
+	Recipients []*EmailContact  `json:"recipients"`
+	Subject    string           `json:"subject"`
+	Template   *common.Template `json:"template"`
 }
 
 func (c *SendinblueConfig) RenderContent(form map[string]any) string {

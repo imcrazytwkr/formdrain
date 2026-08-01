@@ -1,6 +1,6 @@
 package discord
 
 type WebhookKey struct {
-	Snowflake string `bson:"snowflake"`
-	Token     string `bson:"token"`
+	Snowflake string `json:"snowflake"`
+	Token     string `json:"token"`
 }

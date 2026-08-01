@@ -5,12 +5,12 @@ import (
 )
 
 type DiscordConfig struct {
-	Webhooks []*WebhookKey    `bson:"webhooks"`
-	Author   *Author          `bson:"author"`
-	Title    string           `bson:"title,omitempty"`
-	Url      string           `bson:"url,omitempty"`
-	Template *common.Template `bson:"template"`
-	Color    int              `bson:"color,omitempty"`
+	Webhooks []*WebhookKey    `json:"webhooks"`
+	Author   *Author          `json:"author"`
+	Title    string           `json:"title,omitempty"`
+	Url      string           `json:"url,omitempty"`
+	Template *common.Template `json:"template"`
+	Color    int              `json:"color,omitempty"`
 }
 
 func (c *DiscordConfig) RenderContent(form map[string]any) string {

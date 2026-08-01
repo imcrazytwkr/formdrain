@@ -1,13 +1,11 @@
 package form_config
 
-import (
-	"github.com/imcrazytwkr/formdrain/models/common"
-)
-
 type FormConfig struct {
-	FormId      common.ObjectId  `bson:"_id"`
-	SiteId      common.ObjectId  `bson:"site_id"`
-	CaptchaType CaptchaType      `bson:"captcha_type"`
-	Notifiers   *NotifiersConfig `bson:"notifiers"`
-	RedirectTo  string           `bson:"redirect_to"`
+	FormId        int64            `json:"id"`
+	SiteId        int64            `json:"site_id"`
+	CaptchaType   CaptchaType      `json:"captcha_type"`
+	RedirectTo    string           `json:"redirect_to"`
+	FieldSchema   FieldSchema      `json:"field_schema"`
+	SchemaVersion int              `json:"schema_version"`
+	Notifiers     *NotifiersConfig `json:"notifiers"`
 }

@@ -1,8 +1,9 @@
 package common
 
 import (
+	"encoding/json"
+
 	"github.com/valyala/fasttemplate"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 type Template struct {
@@ -25,17 +26,22 @@ func NewTemplate(raw string) (*Template, error) {
 	}, nil
 }
 
-func (t *Template) MarshalBSON() ([]byte, error) {
-	return bson.Marshal(t.source)
+func (t Template) MarshalJSON() ([]byte, error) {
+	return json.Marshal(t.source)
 }
 
-func (t *Template) UnmarshalBSON(b []byte) error {
+func (t *Template) UnmarshalJSON(b []byte) error {
 	var raw string
-	err := bson.Unmarshal(b, raw)
+	err := json.Unmarshal(b, &raw)
 	if err != nil {
 		return err
 	}
 
-	t.source = raw
-	return t.Reset(raw, TemplateStartTag, TemplateEndTag)
+	tmpl, err := NewTemplate(raw)
+	if err != nil {
+		return err
+	}
+
+	*t = *tmpl
+	return nil
 }
