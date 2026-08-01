@@ -1,7 +1,10 @@
 package validators
 
-import "context"
+import (
+	"context"
+	"net/netip"
+)
 
 type CaptchaValidator interface {
-	Validate(ctx context.Context, form map[string]any, hostname string, userIP string) error
+	Validate(ctx context.Context, form map[string]any, hostname string, userIP netip.Addr) error
 }

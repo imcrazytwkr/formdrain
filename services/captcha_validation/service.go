@@ -3,6 +3,7 @@ package captcha_validation
 import (
 	"context"
 	"net/http"
+	"net/netip"
 
 	fc "github.com/imcrazytwkr/formdrain/models/form_config"
 	"github.com/imcrazytwkr/formdrain/services"
@@ -30,7 +31,7 @@ func (s *httpCaptchaValidationService) Validate(
 	captchaType fc.CaptchaType,
 	form map[string]any,
 	hostname string,
-	userIP string,
+	userIP netip.Addr,
 ) error {
 	validator, ok := s.validators[captchaType]
 	if !ok {

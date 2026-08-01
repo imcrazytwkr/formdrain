@@ -53,7 +53,7 @@ func LoggerWithConfig(logger *zerolog.Logger, skipPaths []string) func(http.Hand
 			}
 
 			logEvent.
-				Str("client_ip", httpserver.ClientIP(r)).
+				Str("client_ip", httpserver.ClientIP(r).String()).
 				Str("method", r.Method).
 				Int("status_code", statusCode).
 				Int("body_size", ww.bytes).

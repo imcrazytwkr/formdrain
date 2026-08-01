@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strings"
 
@@ -28,7 +29,7 @@ func NewHcaptchaValidator(secret string, httpClient *http.Client) validators.Cap
 	}
 }
 
-func (v *hcaptchaValidator) Validate(ctx context.Context, form map[string]any, hostname string, userIP string) error {
+func (v *hcaptchaValidator) Validate(ctx context.Context, form map[string]any, hostname string, userIP netip.Addr) error {
 	log := common.GetLoggerForProvider(ctx, providerHcaptcha, common.ApiFormatHttp)
 
 	responseToken, ok := maputil.GetString(form, hcaptchaKey)
@@ -39,8 +40,8 @@ func (v *hcaptchaValidator) Validate(ctx context.Context, form map[string]any, h
 	payload := url.Values{}
 	payload.Set("secret", v.secret)
 	payload.Set("response", responseToken)
-	if len(userIP) > 0 {
-		payload.Set("remoteip", userIP)
+	if userIP.IsValid() {
+		payload.Set("remoteip", userIP.String())
 	}
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, hcaptchaUrl, strings.NewReader(payload.Encode()))

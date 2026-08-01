@@ -3,7 +3,6 @@ package form
 import (
 	"io"
 	"net/http"
-	"net/netip"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/constants"
@@ -60,15 +59,14 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	userIP := httpserver.ClientIP(req)
-	clientIP, err := netip.ParseAddr(userIP)
-	if err != nil || !clientIP.IsValid() {
-		log.Error().Err(err).Str("user_ip", userIP).Msg("could not parse client IP")
+	clientIP := httpserver.ClientIP(req)
+	if !clientIP.IsValid() {
+		log.Error().Msg("could not parse client IP")
 		httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
 		return
 	}
 
-	err = r.captchaValidationService.Validate(ctx, formConfig.CaptchaType, formData, siteConfig.Hostname, clientIP.String())
+	err = r.captchaValidationService.Validate(ctx, formConfig.CaptchaType, formData, siteConfig.Hostname, clientIP)
 	switch err {
 	case nil:
 		// Captcha check passed

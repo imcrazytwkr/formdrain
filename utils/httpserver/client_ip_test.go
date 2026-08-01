@@ -3,6 +3,7 @@ package httpserver_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"testing"
 
 	"github.com/imcrazytwkr/formdrain/constants"
@@ -62,11 +63,14 @@ func TestClientIP(t *testing.T) {
 				r.Header.Set(constants.HeaderRealIP, tt.xri)
 			}
 
-			if got := httpserver.ClientIP(r); got != tt.want {
-				t.Fatalf("ClientIP = %q, want %q", got, tt.want)
+			want := netip.MustParseAddr(tt.want)
+			wantRemote := netip.MustParseAddr(tt.wantRemote)
+
+			if got := httpserver.ClientIP(r); got != want {
+				t.Fatalf("ClientIP = %v, want %v", got, want)
 			}
-			if got := httpserver.RemoteIP(r); got != tt.wantRemote {
-				t.Fatalf("RemoteIP = %q, want %q", got, tt.wantRemote)
+			if got := httpserver.RemoteIP(r); got != wantRemote {
+				t.Fatalf("RemoteIP = %v, want %v", got, wantRemote)
 			}
 		})
 	}
