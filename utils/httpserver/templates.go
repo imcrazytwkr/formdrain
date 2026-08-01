@@ -15,6 +15,24 @@ var templates = template.Must(template.New("httpserver").Parse(`
 </body>
 </html>{{end}}
 
+{{define "errors/validation.html"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{.Message}}</title>
+</head>
+<body>
+<h1>{{.Status}} {{.Message}}</h1>
+{{if .Errors}}
+<ul>
+{{range $field, $err := .Errors}}
+<li><strong>{{$field}}</strong>: {{$err}}</li>
+{{end}}
+</ul>
+{{end}}
+</body>
+</html>{{end}}
+
 {{define "form/success.html"}}<!DOCTYPE html>
 <html lang="en">
 <head>

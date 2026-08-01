@@ -93,7 +93,8 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 
 	payload, err := validation.ValidateFormPayload(formConfig.FieldSchema, formData)
 	if err != nil {
-		httpserver.HandleValidationError(ctx, w, http.StatusBadRequest, err)
+		response := validation.NewValidationErrorResponse(http.StatusBadRequest, err)
+		httpserver.HandleResponse(ctx, w, http.StatusBadRequest, "errors/validation.html", response)
 		return
 	}
 

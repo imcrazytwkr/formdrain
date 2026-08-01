@@ -12,7 +12,6 @@ import (
 	"github.com/imcrazytwkr/formdrain/constants"
 	m "github.com/imcrazytwkr/formdrain/models/http"
 	"github.com/imcrazytwkr/formdrain/utils/httpserver"
-	"github.com/imcrazytwkr/formdrain/validation"
 )
 
 func TestHandleError_JSON(t *testing.T) {
@@ -69,37 +68,26 @@ func TestHandleError_ServerHidesMessage(t *testing.T) {
 	}
 }
 
-func TestHandleValidationError_JSON(t *testing.T) {
+func TestHandleResponse_ValidationHTML(t *testing.T) {
 	t.Parallel()
 
 	w := httptest.NewRecorder()
-	w.Header().Set(constants.HeaderContentType, m.ContentTypeJSON.String())
-
-	joined := errors.Join(
-		&validation.FieldError{Field: "email", Err: validation.ErrMissingRequiredField},
-		&validation.FieldError{Field: "extra", Err: validation.ErrUnknownField},
-	)
-	httpserver.HandleValidationError(context.Background(), w, http.StatusBadRequest, joined)
+	httpserver.HandleResponse(context.Background(), w, http.StatusBadRequest, "errors/validation.html", map[string]any{
+		"Status":  http.StatusBadRequest,
+		"Message": "form validation failed",
+		"Errors": map[string]string{
+			"email": "required form field is missing",
+		},
+	})
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d", w.Code)
 	}
-
-	var body map[string]any
-	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
-		t.Fatal(err)
+	body := w.Body.String()
+	if !strings.Contains(body, "form validation failed") {
+		t.Fatalf("missing message: %q", body)
 	}
-	if body["message"] != validation.ErrValidationFailed.Error() {
-		t.Fatalf("message = %#v", body["message"])
-	}
-	errs, ok := body["errors"].(map[string]any)
-	if !ok {
-		t.Fatalf("errors = %#v", body["errors"])
-	}
-	if errs["email"] != validation.ErrMissingRequiredField.Error() {
-		t.Fatalf("email = %#v", errs["email"])
-	}
-	if errs["extra"] != validation.ErrUnknownField.Error() {
-		t.Fatalf("extra = %#v", errs["extra"])
+	if !strings.Contains(body, "email") || !strings.Contains(body, "required form field is missing") {
+		t.Fatalf("missing field errors: %q", body)
 	}
 }

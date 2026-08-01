@@ -36,11 +36,9 @@ func FieldErrorsMap(errs []error) map[string]string {
 	}
 
 	out := make(map[string]string)
-
-	var fieldErr *FieldError
 	for _, err := range errs {
-		errors.As(err, &fieldErr)
-		if fieldErr == nil || len(fieldErr.Field) == 0 {
+		var fieldErr *FieldError
+		if !errors.As(err, &fieldErr) || fieldErr == nil || len(fieldErr.Field) == 0 {
 			continue
 		}
 
