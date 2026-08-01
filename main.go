@@ -1,13 +1,10 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"net"
 	"net/http"
 	"os"
-	"strings"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/middleware"
@@ -21,8 +18,6 @@ import (
 	"github.com/imcrazytwkr/formdrain/utils/httpclient"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	_ "modernc.org/sqlite"
 )
@@ -54,15 +49,9 @@ func main() {
 	}
 	defer sqliteDB.Close()
 
-	mongoDb, err := getMongoDb()
-	if err != nil {
-		log.Fatal().Err(err)
-	}
-
-	formConfigRepository := fcr.NewMongoFormConfigRepository(mongoDb)
-	formResponseRepository := frr.NewMongoFormResponseRepository(mongoDb)
-
-	siteConfigRepository := scr.NewMongoSiteConfigRepository(mongoDb)
+	formConfigRepository := fcr.NewSqliteFormConfigRepository(sqliteDB)
+	formResponseRepository := frr.NewSqliteFormResponseRepository(sqliteDB)
+	siteConfigRepository := scr.NewSqliteSiteConfigRepository(sqliteDB)
 
 	httpClient := httpclient.DefaultClient()
 	captchaValidationService := cvs.NewHttpCaptchaValidationService(httpClient, &log.Logger)
@@ -108,27 +97,4 @@ func openSqlite() (*sql.DB, error) {
 	}
 
 	return db, nil
-}
-
-func getMongoDb(opts ...*options.DatabaseOptions) (*mongo.Database, error) {
-	connstring, err := getConnString()
-	if err != nil {
-		return nil, err
-	}
-
-	database := strings.Trim(connstring.Path, "/")
-	if len(database) < 1 {
-		database = "formdrain"
-	}
-
-	mongoOptions := options.Client().ApplyURI(connstring.String())
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
-
-	mongoClient, err := mongo.Connect(ctx, mongoOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	return mongoClient.Database(database, opts...), nil
 }

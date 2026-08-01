@@ -14,34 +14,40 @@ func (r *formRouter) AttachFormConfigs(next http.Handler) http.Handler {
 		ctx := req.Context()
 		log := zerolog.Ctx(ctx)
 
-		formId := chi.URLParam(req, "formId")
+		formIdRaw := chi.URLParam(req, "formId")
+		formId, err := strconv.ParseInt(formIdRaw, 10, 64)
+		if err != nil || formId < 1 {
+			httpserver.HandleError(ctx, w, http.StatusNotFound, getErrFormNotFound(formIdRaw))
+			return
+		}
+
 		formConfig, err := r.formConfigRepository.GetFormConfigById(ctx, formId)
 		if err != nil {
-			log.Err(err).Str("form_id", formId).Msg("error fetching form config")
+			log.Err(err).Int64("form_id", formId).Msg("error fetching form config")
 			httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
 			return
 		}
 
 		if formConfig == nil {
-			httpserver.HandleError(ctx, w, http.StatusNotFound, getErrFormNotFound(formId))
+			httpserver.HandleError(ctx, w, http.StatusNotFound, getErrFormNotFound(formIdRaw))
 			return
 		}
 
 		if formConfig.SiteId < 1 {
-			log.Error().Str("form_id", formId).Msg("form config has no siteId ref")
+			log.Error().Int64("form_id", formId).Msg("form config has no siteId ref")
 			httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
 			return
 		}
 
-		siteConfig, err := r.siteConfigRepository.GetSiteConfigById(ctx, strconv.FormatInt(formConfig.SiteId, 10))
+		siteConfig, err := r.siteConfigRepository.GetSiteConfigById(ctx, formConfig.SiteId)
 		if err != nil {
-			log.Err(err).Str("form_id", formId).Msg("error fetching site config for form")
+			log.Err(err).Int64("form_id", formId).Msg("error fetching site config for form")
 			httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
 			return
 		}
 
 		if siteConfig == nil {
-			log.Error().Str("form_id", formId).Msg("could not find site config for form")
+			log.Error().Int64("form_id", formId).Msg("could not find site config for form")
 			httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
 			return
 		}

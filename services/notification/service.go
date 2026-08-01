@@ -23,7 +23,7 @@ func NewHttpNotificationService(httpClient *http.Client) services.NotificationSe
 	}
 }
 
-func (s *httpNotificationService) Send(config *fc.NotifiersConfig, form map[string]any) error {
+func (s *httpNotificationService) Send(config fc.NotifiersConfig, form map[string]any) error {
 	var errs []error
 
 	if config.Discord != nil {

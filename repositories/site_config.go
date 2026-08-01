@@ -7,5 +7,5 @@ import (
 )
 
 type SiteConfigRepository interface {
-	GetSiteConfigById(ctx context.Context, id string) (*site_config.SiteConfig, error)
+	GetSiteConfigById(ctx context.Context, id int64) (*site_config.SiteConfig, error)
 }

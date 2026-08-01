@@ -41,24 +41,6 @@ func getPort() (string, error) {
 	return listenPort, nil
 }
 
-func getConnString() (*url.URL, error) {
-	mongoConnstring := os.Getenv("MONGO_DBURL")
-	if len(mongoConnstring) < 1 {
-		return nil, errors.New("mongoDB connstring is not set")
-	}
-
-	url, err := url.Parse(mongoConnstring)
-	if err != nil {
-		return nil, fmt.Errorf("mongoDB connstring %q is invalid", mongoConnstring)
-	}
-
-	if url.Scheme != "mongo" {
-		return nil, fmt.Errorf("mongoDB connstring %q has invalid scheme", url.Scheme)
-	}
-
-	return url, nil
-}
-
 // getDBURL reads DBURL (e.g. sqlite:/path/to/file.db).
 func getDBURL() (*url.URL, error) {
 	raw := os.Getenv("DBURL")

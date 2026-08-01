@@ -28,6 +28,15 @@ func init() {
 	}
 }
 
+func ParseCaptchaType(v string) (CaptchaType, error) {
+	value, ok := fromString[v]
+	if !ok {
+		return CaptchaTypeUndefined, fmt.Errorf("%q is not a valid captcha type", v)
+	}
+
+	return value, nil
+}
+
 func (c CaptchaType) String() string {
 	return toString[c]
 }
@@ -43,9 +52,9 @@ func (c *CaptchaType) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	value, ok := fromString[raw]
-	if !ok {
-		return fmt.Errorf("%q is not a valid captcha type", raw)
+	value, err := ParseCaptchaType(raw)
+	if err != nil {
+		return err
 	}
 
 	*c = value

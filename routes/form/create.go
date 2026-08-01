@@ -3,9 +3,11 @@ package form
 import (
 	"io"
 	"net/http"
+	"net/netip"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/constants"
+	"github.com/imcrazytwkr/formdrain/models/form_response"
 	"github.com/imcrazytwkr/formdrain/utils/bodyparser"
 	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 	"github.com/imcrazytwkr/formdrain/utils/logutil"
@@ -58,13 +60,14 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 	}
 
 	userIP := httpserver.ClientIP(req)
-	if len(userIP) < 1 {
-		log.Error().Msg("could not parse client IP")
+	clientIP, err := netip.ParseAddr(userIP)
+	if err != nil || !clientIP.IsValid() {
+		log.Error().Err(err).Str("user_ip", userIP).Msg("could not parse client IP")
 		httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
 		return
 	}
 
-	err = r.captchaValidationService.Validate(ctx, formConfig.CaptchaType, formData, siteConfig.Hostname, userIP)
+	err = r.captchaValidationService.Validate(ctx, formConfig.CaptchaType, formData, siteConfig.Hostname, clientIP.String())
 	switch err {
 	case nil:
 		// Captcha check passed
@@ -76,16 +79,22 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 		log.Err(err).
 			Str("captcha_provider", formConfig.CaptchaType.String()).
 			Str("form_id", formId).
-			Str("user_ip", userIP).
+			Str("user_ip", clientIP.String()).
 			Msg("error validating user captcha")
 
 		httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
 		return
 	}
 
-	responseId, err := r.formResponseRepository.SaveFormResponse(ctx, formData)
+	responseId, err := r.formResponseRepository.SaveFormResponse(ctx, &form_response.FormResponse{
+		FormId:        formConfig.FormId,
+		SchemaVersion: formConfig.SchemaVersion,
+		ClientIP:      clientIP,
+		Payload:       formData,
+	})
 	if err != nil {
 		log.Err(err).Str("form_id", formId).Msg("could not save response into DB")
+		httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
 		return
 	}
 

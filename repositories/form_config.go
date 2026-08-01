@@ -7,5 +7,5 @@ import (
 )
 
 type FormConfigRepository interface {
-	GetFormConfigById(ctx context.Context, id string) (*form_config.FormConfig, error)
+	GetFormConfigById(ctx context.Context, id int64) (*form_config.FormConfig, error)
 }

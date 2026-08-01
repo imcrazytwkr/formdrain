@@ -7,5 +7,5 @@ type FormConfig struct {
 	RedirectTo    string           `json:"redirect_to"`
 	FieldSchema   FieldSchema      `json:"field_schema"`
 	SchemaVersion int              `json:"schema_version"`
-	Notifiers     *NotifiersConfig `json:"notifiers"`
+	Notifiers     NotifiersConfig `json:"notifiers"`
 }
