@@ -9,20 +9,15 @@ import (
 	"time"
 
 	"github.com/imcrazytwkr/formdrain/utils/httpclient/transports"
+	"github.com/imcrazytwkr/formdrain/utils/testutil"
 	"golang.org/x/time/rate"
 )
-
-type roundTripFunc func(*http.Request) (*http.Response, error)
-
-func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
-	return f(r)
-}
 
 func TestLimitedTransport_CallsBase(t *testing.T) {
 	t.Parallel()
 
 	called := false
-	base := roundTripFunc(func(r *http.Request) (*http.Response, error) {
+	base := testutil.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
 		called = true
 		return &http.Response{
 			StatusCode: http.StatusNoContent,
@@ -56,7 +51,7 @@ func TestLimitedTransport_CallsBase(t *testing.T) {
 func TestLimitedTransport_ContextCancel(t *testing.T) {
 	t.Parallel()
 
-	base := roundTripFunc(func(r *http.Request) (*http.Response, error) {
+	base := testutil.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
 		t.Fatal("base should not be called")
 		return nil, nil
 	})
