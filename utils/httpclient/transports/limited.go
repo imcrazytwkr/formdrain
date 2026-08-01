@@ -30,5 +30,5 @@ func (t *limitedTransport) RoundTrip(request *http.Request) (*http.Response, err
 		return nil, err
 	}
 
-	return nil, nil
+	return t.base.RoundTrip(request)
 }
