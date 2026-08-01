@@ -2,100 +2,84 @@ package bodyparser
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
-
-	"github.com/valyala/fastjson"
+	"strings"
 )
 
-type jsonParser struct {
-	pool *fastjson.ParserPool
-}
+type jsonParser struct{}
 
 func NewJsonParser() BodyParser {
-	pool := &fastjson.ParserPool{}
-	return &jsonParser{pool}
+	return &jsonParser{}
 }
 
 func (p *jsonParser) Parse(body []byte) (map[string]any, error) {
-	var err error
+	dec := json.NewDecoder(bytes.NewReader(body))
+	dec.UseNumber()
 
-	parser := p.pool.Get()
-	defer p.pool.Put(parser)
-
-	bodyValue, err := parser.ParseBytes(body)
-	if err != nil {
+	var raw map[string]any
+	if err := dec.Decode(&raw); err != nil {
 		return nil, err
 	}
 
-	object, err := bodyValue.Object()
-	if err != nil {
-		return nil, err
-	}
-
-	var result map[string]any
-	object.Visit(func(k []byte, v *fastjson.Value) {
-		if err != nil {
-			return
-		}
-
-		key := string(k)
-		switch v.Type() {
-		case fastjson.TypeArray:
-			values, e := v.Array()
-			if e != nil || len(values) < 1 {
-				break
+	result := make(map[string]any, len(raw))
+	for key, v := range raw {
+		switch value := v.(type) {
+		case []any:
+			if len(value) < 1 {
+				continue
 			}
 
-			// @NOTE: error caught here means request body is FUBAR
-			value, e := parseArray(values)
-			if e != nil {
-				err = e
-				break
+			parsed, err := parseArray(value)
+			if err != nil {
+				return nil, err
 			}
-
-			if len(value) > 0 {
-				result[key] = value
+			if len(parsed) > 0 {
+				result[key] = parsed
 			}
 		default:
-			value, e := parseSimpleValue(v)
-			if e == nil && value != nil {
-				result[key] = value
+			parsed, err := parseSimpleValue(v)
+			if err != nil {
+				return nil, err
+			}
+			if parsed != nil {
+				result[key] = parsed
 			}
 		}
-	})
-
-	if err != nil {
-		return nil, err
 	}
 
 	return result, nil
 }
 
-func parseArray(arr []*fastjson.Value) ([]any, error) {
+func parseArray(arr []any) ([]any, error) {
 	size := len(arr)
 	if size < 1 {
 		return nil, nil
 	}
 
-	lastType := fastjson.TypeNull
+	var lastKind valueKind
 	result := make([]any, size)
 	i := 0
 
 	for _, v := range arr {
-		switch v.Type() {
-		case fastjson.TypeArray, fastjson.TypeObject:
+		kind := classifyValue(v)
+		switch kind {
+		case kindArray, kindObject:
 			return nil, errors.New("nested structures are not allowed")
-		case fastjson.TypeNull:
+		case kindNull:
 			continue
 		default:
 			if i == 0 {
-				lastType = v.Type()
-			} else if v.Type() != lastType {
+				lastKind = kind
+			} else if kind != lastKind {
 				return nil, errors.New("combined-type arrays are not allowed")
 			}
 
 			value, err := parseSimpleValue(v)
-			if err == nil && value != nil {
+			if err != nil {
+				return nil, err
+			}
+			if value != nil {
 				result[i] = value
 				i++
 			}
@@ -113,42 +97,60 @@ func parseArray(arr []*fastjson.Value) ([]any, error) {
 	return result, nil
 }
 
-func parseSimpleValue(v *fastjson.Value) (value any, err error) {
-	switch v.Type() {
-	case fastjson.TypeString:
-		value, err = parseString(v)
-	case fastjson.TypeNumber:
-		value, err = parseNumber(v)
-	case fastjson.TypeTrue, fastjson.TypeFalse:
-		value, err = v.Bool()
-	}
+type valueKind int8
 
-	return
+const (
+	kindNull valueKind = iota
+	kindString
+	kindNumber
+	kindBool
+	kindArray
+	kindObject
+	kindOther
+)
+
+func classifyValue(v any) valueKind {
+	switch v.(type) {
+	case nil:
+		return kindNull
+	case string:
+		return kindString
+	case json.Number:
+		return kindNumber
+	case bool:
+		return kindBool
+	case []any:
+		return kindArray
+	case map[string]any:
+		return kindObject
+	default:
+		return kindOther
+	}
 }
 
-func parseString(v *fastjson.Value) (string, error) {
-	raw, err := v.StringBytes()
-	if err != nil {
-		return "", err
+func parseSimpleValue(v any) (any, error) {
+	switch value := v.(type) {
+	case nil:
+		return nil, nil
+	case string:
+		return strings.TrimSpace(value), nil
+	case json.Number:
+		return parseNumber(value)
+	case bool:
+		return value, nil
+	case map[string]any:
+		// Top-level nested objects are skipped (same as previous fastjson path).
+		return nil, nil
+	default:
+		return nil, nil
 	}
-
-	return string(bytes.TrimSpace(raw)), nil
 }
 
-func parseNumber(v *fastjson.Value) (any, error) {
-	floatValue, err := v.Float64()
-	if err != nil {
-		return nil, err
+func parseNumber(n json.Number) (any, error) {
+	intValue, err := n.Int64()
+	if err == nil {
+		return intValue, nil
 	}
 
-	intValue, err := v.Int64()
-	if err != nil {
-		return floatValue, nil
-	}
-
-	if float64(intValue) != floatValue {
-		return floatValue, nil
-	}
-
-	return intValue, nil
+	return n.Float64()
 }
