@@ -1,7 +1,8 @@
 package notification
 
 import (
-	"github.com/hashicorp/go-multierror"
+	"errors"
+
 	fc "github.com/imcrazytwkr/formdrain/models/form_config"
 	"github.com/imcrazytwkr/formdrain/services"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers"
@@ -23,21 +24,21 @@ func NewHttpNotificationService(httpClient types.HttpClient) services.Notificati
 }
 
 func (s *httpNotificationService) Send(config *fc.NotifiersConfig, form map[string]any) error {
-	var errs *multierror.Error
+	var errs []error
 
 	if config.Discord != nil {
 		err := s.discordNotifier.Send(config.Discord, form)
 		if err != nil {
-			multierror.Append(errs, err)
+			errs = append(errs, err)
 		}
 	}
 
 	if config.Sendinblue != nil {
 		err := s.sendinblueNotifier.Send(config.Sendinblue, form)
 		if err != nil {
-			multierror.Append(errs, err)
+			errs = append(errs, err)
 		}
 	}
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }

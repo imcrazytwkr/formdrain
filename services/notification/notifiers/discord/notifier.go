@@ -3,10 +3,10 @@ package discord
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/imcrazytwkr/formdrain/models/form_config/discord"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers/discord/models"
@@ -76,13 +76,13 @@ func (n *discordNotifier) Send(config *discord.DiscordConfig, form map[string]an
 		Color:       config.Color,
 	})
 
-	var errs *multierror.Error
+	var errs []error
 	for _, key := range config.Webhooks {
 		err := n.send(key.Snowflake, key.Token, request)
 		if err != nil {
-			errs = multierror.Append(errs, err)
+			errs = append(errs, err)
 		}
 	}
 
-	return errs.ErrorOrNil()
+	return errors.Join(errs...)
 }

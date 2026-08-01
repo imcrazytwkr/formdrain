@@ -93,7 +93,7 @@ func (r *formRouter) HandleCreateForm(c *gin.Context) {
 
 	err = r.notificaionService.Send(formConfig.Notifiers, form)
 	if err != nil {
-		logutil.Multierr(log.Error(), err).Msg("failed to send notifications")
+		logutil.UnwrapErr(log.Error(), err).Msg("failed to send notifications")
 	}
 
 	if len(formConfig.RedirectTo) > 0 {
