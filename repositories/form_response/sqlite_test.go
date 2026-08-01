@@ -39,13 +39,11 @@ func TestSaveFormResponse(t *testing.T) {
 		t.Fatal("empty id")
 	}
 
-	var (
-		formId        int64
-		schemaVersion int
-		clientIP      string
-		payload       string
-		createdAt     string
-	)
+	var formId int64
+	var schemaVersion int
+	var clientIP string
+	var payload string
+	var createdAt string
 	err = db.QueryRow(`
 		SELECT form_id, schema_version, client_ip, payload, created_at
 		FROM form_responses WHERE id = ?`, id,

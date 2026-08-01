@@ -36,13 +36,11 @@ func (r *sqliteFormConfigRepository) GetFormConfigById(ctx context.Context, id i
 		return nil, nil
 	}
 
-	var (
-		config         fc.FormConfig
-		redirectTo     sql.NullString
-		rawCaptchaType string
-		fieldSchema    string
-		notifiersJSON  string
-	)
+	var config fc.FormConfig
+	var redirectTo sql.NullString
+	var rawCaptchaType string
+	var fieldSchema string
+	var notifiersJSON string
 
 	err := r.db.QueryRowContext(ctx, selectFormConfigById, id).Scan(
 		&config.FormId,

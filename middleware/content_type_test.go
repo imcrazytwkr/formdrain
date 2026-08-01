@@ -14,10 +14,8 @@ import (
 func TestContentTypeParser_StoresAndGuesses(t *testing.T) {
 	t.Parallel()
 
-	var (
-		stored m.ContentType
-		respCT string
-	)
+	var stored m.ContentType
+	var respCT string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		stored = httpserver.GetContentType(r)
 		respCT = w.Header().Get(constants.HeaderContentType)
