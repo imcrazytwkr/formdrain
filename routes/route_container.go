@@ -1,7 +1,7 @@
 package routes
 
-import "github.com/gin-gonic/gin"
+import "github.com/go-chi/chi/v5"
 
 type RouteContainer interface {
-	Register(router gin.IRouter)
+	Register(router chi.Router)
 }

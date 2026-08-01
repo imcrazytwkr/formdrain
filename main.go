@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/middleware"
 	m "github.com/imcrazytwkr/formdrain/models/http"
 	fcr "github.com/imcrazytwkr/formdrain/repositories/form_config"
@@ -24,7 +25,7 @@ import (
 )
 
 func main() {
-	if gin.IsDebugging() {
+	if os.Getenv("GIN_MODE") != "release" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
 	}
 
@@ -38,10 +39,11 @@ func main() {
 		log.Fatal().Err(err)
 	}
 
-	engine := gin.New()
-	engine.Use(middleware.DefaultLogger(), gin.Recovery())
-	engine.Use(middleware.RequestId())
-	engine.Use(middleware.ResponseFormatParser(m.ContentTypeHTML, m.ContentTypeJSON))
+	router := chi.NewRouter()
+	router.Use(middleware.DefaultLogger())
+	router.Use(middleware.RequestId())
+	router.Use(middleware.ResponseFormatParser(m.ContentTypeHTML, m.ContentTypeJSON))
+	router.Use(middleware.Recoverer())
 
 	mongoDb, err := getMongoDb()
 	if err != nil {
@@ -57,15 +59,21 @@ func main() {
 	captchaValidationService := cvs.NewHttpCaptchaValidationService(httpClient, &log.Logger)
 	notificationService := ns.NewHttpNotificationService(httpClient)
 
-	form.NewFormRouter(
-		formConfigRepository,
-		siteConfigRepository,
-		formResponseRepository,
-		captchaValidationService,
-		notificationService,
-	).Register(engine.Group("/form"))
+	router.Route("/form", func(r chi.Router) {
+		form.NewFormRouter(
+			formConfigRepository,
+			siteConfigRepository,
+			formResponseRepository,
+			captchaValidationService,
+			notificationService,
+		).Register(r)
+	})
 
-	engine.Run(fmt.Sprintf("%s:%s", listenHost, listenPort))
+	addr := net.JoinHostPort(listenHost, listenPort)
+	err = http.ListenAndServe(addr, router)
+	if err != nil {
+		log.Fatal().Err(err).Msg("server stopped")
+	}
 }
 
 func getMongoDb(opts ...*options.DatabaseOptions) (*mongo.Database, error) {

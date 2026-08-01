@@ -4,68 +4,79 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-func DefaultLogger() gin.HandlerFunc {
+func DefaultLogger() func(http.Handler) http.Handler {
 	return LoggerWithConfig(&log.Logger, nil)
 }
 
-// LoggerWithConfig instance a Logger middleware with config.
-func LoggerWithConfig(logger *zerolog.Logger, skipPaths []string) gin.HandlerFunc {
+// LoggerWithConfig returns a logger middleware with optional path skips.
+func LoggerWithConfig(logger *zerolog.Logger, skipPaths []string) func(http.Handler) http.Handler {
 	var skip map[string]struct{}
 
 	skipped := len(skipPaths)
 	if skipped > 0 {
 		skip = make(map[string]struct{}, skipped)
-
 		for _, path := range skipPaths {
 			skip[path] = struct{}{}
 		}
 	}
 
-	return func(c *gin.Context) {
-		path := c.Request.URL.Path
-		raw := c.Request.URL.RawQuery
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			raw := r.URL.RawQuery
 
-		logger.With()
-		c.Request = c.Request.WithContext(logger.WithContext(c.Request.Context()))
+			r = r.WithContext(logger.WithContext(r.Context()))
+			ww := &responseWriter{ResponseWriter: w, status: http.StatusOK}
 
-		// Start timer
-		start := time.Now()
+			start := time.Now()
+			next.ServeHTTP(ww, r)
 
-		// Process request
-		c.Next()
+			if _, ok := skip[path]; ok {
+				return
+			}
 
-		// Log only when path is not being skipped
-		_, ok := skip[path]
-		if ok {
-			return
-		}
+			if len(raw) > 0 {
+				path = path + "?" + raw
+			}
 
-		stop := time.Now()
-		statusCode := c.Writer.Status()
+			statusCode := ww.status
+			var logEvent *zerolog.Event
+			if statusCode < http.StatusInternalServerError {
+				logEvent = logger.Info()
+			} else {
+				logEvent = logger.Error()
+			}
 
-		if len(raw) > 0 {
-			path = path + "?" + raw
-		}
-
-		// Log using the params
-		var logEvent *zerolog.Event
-		if statusCode < http.StatusInternalServerError {
-			logEvent = logger.Info()
-		} else {
-			logEvent = logger.Error()
-		}
-
-		logEvent.Str("client_ip", c.ClientIP())
-		logEvent.Str("method", c.Request.Method)
-		logEvent.Int("status_code", statusCode)
-		logEvent.Int("body_size", c.Writer.Size())
-		logEvent.Str("path", path)
-		logEvent.Str("latency", stop.Sub(start).String())
-		logEvent.Msg(c.Errors.ByType(gin.ErrorTypePrivate).String())
+			logEvent.
+				Str("client_ip", httpserver.ClientIP(r)).
+				Str("method", r.Method).
+				Int("status_code", statusCode).
+				Int("body_size", ww.bytes).
+				Str("path", path).
+				Str("latency", time.Since(start).String()).
+				Msg("")
+		})
 	}
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	status int
+	bytes  int
+}
+
+func (w *responseWriter) WriteHeader(statusCode int) {
+	w.status = statusCode
+	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (w *responseWriter) Write(b []byte) (int, error) {
+	n, err := w.ResponseWriter.Write(b)
+	w.bytes += n
+	return n, err
 }

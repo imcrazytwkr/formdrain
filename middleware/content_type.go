@@ -4,41 +4,36 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/imcrazytwkr/formdrain/constants"
 	m "github.com/imcrazytwkr/formdrain/models/http"
-	"github.com/imcrazytwkr/formdrain/utils/ginutil"
+	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 )
 
-func ContentTypeParser(allowed ...string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		switch c.Request.Method {
-		case http.MethodPost, http.MethodPut, http.MethodPatch:
-			contentType := m.ParseFormContentType(c.ContentType())
-			if contentType == m.ContentTypeUndefined {
-				// No Content-Type specified for mutable body
-				ginutil.HandleError(
-					c,
-					http.StatusUnsupportedMediaType,
-					fmt.Errorf("valid Content-Type header should be specified for %s requests", c.Request.Method),
-				)
+func ContentTypeParser() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodPost, http.MethodPut, http.MethodPatch:
+				contentType := m.ParseFormContentType(httpserver.RequestContentType(r))
+				if contentType == m.ContentTypeUndefined {
+					httpserver.HandleError(
+						r.Context(),
+						w,
+						http.StatusUnsupportedMediaType,
+						fmt.Errorf("valid Content-Type header should be specified for %s requests", r.Method),
+					)
+					return
+				}
 
-				c.Abort()
-				return
+				r = r.WithContext(httpserver.WithContentType(r.Context(), contentType))
+
+				// Guess response format if Accept did not set Content-Type.
+				if len(w.Header().Get(constants.HeaderContentType)) < 1 {
+					w.Header().Set(constants.HeaderContentType, contentType.String())
+				}
 			}
 
-			c.Set(constants.KeyContentType, contentType)
-
-			// Guessing response format if no Accepts header was supplied based on
-			// Content-Type header of request
-			format := ginutil.GetResponseFormat(c)
-			if format == m.ContentTypeUndefined {
-				c.Set(constants.KeyResponseFormat, contentType)
-			}
-
-			fallthrough
-		default:
-			c.Next()
-		}
+			next.ServeHTTP(w, r)
+		})
 	}
 }

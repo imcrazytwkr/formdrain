@@ -1,27 +1,29 @@
 package form
 
 import (
-	"github.com/gin-gonic/gin"
+	"context"
+
 	"github.com/imcrazytwkr/formdrain/models/form_config"
 	"github.com/imcrazytwkr/formdrain/models/site_config"
 )
 
-func getFormConfig(c *gin.Context) (*form_config.FormConfig, bool) {
-	rawFormConfig, ok := c.Get(keyFormConfig)
-	if !ok {
-		return nil, false
-	}
+type formConfigCtxKey struct{}
+type siteConfigCtxKey struct{}
 
-	formConfig, ok := rawFormConfig.(*form_config.FormConfig)
-	return formConfig, ok
+func withFormConfig(ctx context.Context, cfg *form_config.FormConfig) context.Context {
+	return context.WithValue(ctx, formConfigCtxKey{}, cfg)
 }
 
-func getSiteConfig(c *gin.Context) (*site_config.SiteConfig, bool) {
-	rawSiteConfig, ok := c.Get(keySiteConfig)
-	if !ok {
-		return nil, false
-	}
+func withSiteConfig(ctx context.Context, cfg *site_config.SiteConfig) context.Context {
+	return context.WithValue(ctx, siteConfigCtxKey{}, cfg)
+}
 
-	siteConfig, ok := rawSiteConfig.(*site_config.SiteConfig)
-	return siteConfig, ok
+func getFormConfig(ctx context.Context) (*form_config.FormConfig, bool) {
+	cfg, ok := ctx.Value(formConfigCtxKey{}).(*form_config.FormConfig)
+	return cfg, ok
+}
+
+func getSiteConfig(ctx context.Context) (*site_config.SiteConfig, bool) {
+	cfg, ok := ctx.Value(siteConfigCtxKey{}).(*site_config.SiteConfig)
+	return cfg, ok
 }

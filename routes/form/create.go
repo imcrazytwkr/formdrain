@@ -4,73 +4,73 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/utils/bodyparser"
-	"github.com/imcrazytwkr/formdrain/utils/ginutil"
+	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 	"github.com/imcrazytwkr/formdrain/utils/logutil"
 )
 
-func (r *formRouter) HandleCreateForm(c *gin.Context) {
-	log := getLoggerForAction(c.Request.Context(), actionSend)
-	ctx := log.WithContext(c.Request.Context())
+func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) {
+	log := getLoggerForAction(req.Context(), actionSend)
+	ctx := log.WithContext(req.Context())
 
-	contentType := ginutil.GetContentType(c)
+	contentType := httpserver.GetContentType(req)
 	parser, ok := bodyparser.ParsersNew[contentType]
 	if !ok {
-		ginutil.HandleError(c, http.StatusUnsupportedMediaType, getErrUnsupportedFormType(contentType))
+		httpserver.HandleError(ctx, w, http.StatusUnsupportedMediaType, getErrUnsupportedFormType(contentType))
 		return
 	}
 
-	if c.Request.ContentLength > maxBodySize {
-		ginutil.HandleError(c, http.StatusRequestEntityTooLarge, errFormTooLarge)
+	if req.ContentLength > maxBodySize {
+		httpserver.HandleError(ctx, w, http.StatusRequestEntityTooLarge, errFormTooLarge)
 		return
 	}
 
 	// @NOTE: despite what you may think considering the earlier Content-Length check,
 	// you can never trust your users to correctly set the headers
-	body, err := io.ReadAll(io.LimitReader(c.Request.Body, maxBodySize))
+	body, err := io.ReadAll(io.LimitReader(req.Body, maxBodySize))
 	if err != nil {
-		ginutil.HandleError(c, http.StatusBadRequest, getErrMalformedFormData(contentType))
+		httpserver.HandleError(ctx, w, http.StatusBadRequest, getErrMalformedFormData(contentType))
 		return
 	}
 
-	form, err := parser.Parse(body)
+	formData, err := parser.Parse(body)
 	if err != nil {
-		ginutil.HandleError(c, http.StatusBadRequest, getErrMalformedFormData(contentType))
+		httpserver.HandleError(ctx, w, http.StatusBadRequest, getErrMalformedFormData(contentType))
 		return
 	}
 
-	formId := c.Param("formId")
+	formId := chi.URLParam(req, "formId")
 
-	formConfig, ok := getFormConfig(c)
+	formConfig, ok := getFormConfig(ctx)
 	if !ok {
 		log.Error().Msg("form config does not exist in context after being attached")
-		ginutil.HandleStatus(c, http.StatusInternalServerError)
+		httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
 		return
 	}
 
-	siteConfig, ok := getSiteConfig(c)
+	siteConfig, ok := getSiteConfig(ctx)
 	if !ok {
 		log.Error().Msg("site config does not exist in context after being attached")
-		ginutil.HandleStatus(c, http.StatusInternalServerError)
+		httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
 		return
 	}
 
-	userIP := c.ClientIP()
+	userIP := httpserver.ClientIP(req)
 	if len(userIP) < 1 {
 		log.Error().Msg("could not parse client IP")
-		ginutil.HandleStatus(c, http.StatusInternalServerError)
+		httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
 		return
 	}
 
-	err = r.captchaValidationService.Validate(ctx, formConfig.CaptchaType, form, siteConfig.Hostname, userIP)
+	err = r.captchaValidationService.Validate(ctx, formConfig.CaptchaType, formData, siteConfig.Hostname, userIP)
 	switch err {
 	case nil:
 		// Captcha check passed
 		break
 	case constants.ErrCaptchaNotPassed:
-		ginutil.HandleError(c, http.StatusBadRequest, err)
+		httpserver.HandleError(ctx, w, http.StatusBadRequest, err)
 		return
 	default:
 		log.Err(err).
@@ -79,11 +79,11 @@ func (r *formRouter) HandleCreateForm(c *gin.Context) {
 			Str("user_ip", userIP).
 			Msg("error validating user captcha")
 
-		ginutil.HandleStatus(c, http.StatusInternalServerError)
+		httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
 		return
 	}
 
-	responseId, err := r.formResponseRepository.SaveFormResponse(ctx, form)
+	responseId, err := r.formResponseRepository.SaveFormResponse(ctx, formData)
 	if err != nil {
 		log.Err(err).Str("form_id", formId).Msg("could not save response into DB")
 		return
@@ -91,17 +91,17 @@ func (r *formRouter) HandleCreateForm(c *gin.Context) {
 
 	log.Debug().Str("form_id", formId).Str("response_id", responseId).Msg("saved response")
 
-	err = r.notificaionService.Send(formConfig.Notifiers, form)
+	err = r.notificaionService.Send(formConfig.Notifiers, formData)
 	if err != nil {
 		logutil.UnwrapErr(log.Error(), err).Msg("failed to send notifications")
 	}
 
 	if len(formConfig.RedirectTo) > 0 {
-		ginutil.HandleRedirect(c, http.StatusSeeOther, "form/redirect.html", formConfig.RedirectTo, nil)
+		httpserver.HandleRedirect(ctx, w, http.StatusSeeOther, "form/redirect.html", formConfig.RedirectTo, nil)
 		return
 	}
 
-	ginutil.HandleResponse(c, http.StatusOK, "form/success.html", &gin.H{
+	httpserver.HandleResponse(ctx, w, http.StatusOK, "form/success.html", map[string]any{
 		"formConfig": formConfig,
 		"siteConfig": siteConfig,
 	})

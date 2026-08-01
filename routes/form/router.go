@@ -1,7 +1,7 @@
 package form
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/middleware"
 	"github.com/imcrazytwkr/formdrain/repositories"
 	"github.com/imcrazytwkr/formdrain/routes"
@@ -32,11 +32,12 @@ func NewFormRouter(
 	}
 }
 
-func (r *formRouter) Register(router gin.IRouter) {
-	postRouter := router.Group("/:formId")
-	postRouter.Use(middleware.ContentTypeParser())
-	postRouter.Use(r.AttachFormConfigs)
-	postRouter.Use(r.CheckCORS)
-	postRouter.OPTIONS("/", r.HandlePreflight)
-	postRouter.POST("/", r.HandleCreateForm)
+func (r *formRouter) Register(router chi.Router) {
+	router.Route("/{formId}", func(rtr chi.Router) {
+		rtr.Use(middleware.ContentTypeParser())
+		rtr.Use(r.AttachFormConfigs)
+		rtr.Use(r.CheckCORS)
+		rtr.Options("/", r.HandlePreflight)
+		rtr.Post("/", r.HandleCreateForm)
+	})
 }

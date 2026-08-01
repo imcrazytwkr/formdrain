@@ -7,7 +7,4 @@ const maxBodySize int64 = 4096
 
 const actionSend = "send"
 
-const keyFormConfig = "form_config"
-const keySiteConfig = "site_config"
-
 var errInvalidOrigin = errors.New("CORS origin is not valid")

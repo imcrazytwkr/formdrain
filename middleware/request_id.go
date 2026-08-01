@@ -1,29 +1,32 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
+	"net/http"
+
 	"github.com/google/uuid"
+	"github.com/imcrazytwkr/formdrain/constants"
+	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 	"github.com/rs/zerolog"
 )
 
-const requestIdHeader = "X-Request-ID"
+func RequestId() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			requestId := ""
 
-func RequestId() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		requestId := ""
+			// @NOTE: if this condition holds, we are running behind a trusted proxy
+			if httpserver.ClientIP(r) != httpserver.RemoteIP(r) {
+				requestId = r.Header.Get(constants.HeaderRequestID)
+			}
 
-		// @NOTE: if this condition holds, we are running behind a trusted proxy
-		if c.ClientIP() != c.RemoteIP() {
-			requestId = c.GetHeader(requestIdHeader)
-		}
+			if len(requestId) < 1 {
+				requestId = uuid.NewString()
+			}
 
-		if len(requestId) < 1 {
-			requestId = uuid.NewString()
-		}
+			log := zerolog.Ctx(r.Context()).With().Str("request_id", requestId).Logger()
+			r = r.WithContext(log.WithContext(r.Context()))
 
-		log := zerolog.Ctx(c.Request.Context()).With().Str("request_id", requestId).Logger()
-		c.Request = c.Request.WithContext(log.WithContext(c.Request.Context()))
-
-		c.Next()
+			next.ServeHTTP(w, r)
+		})
 	}
 }

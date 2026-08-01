@@ -3,54 +3,56 @@ package form
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"github.com/imcrazytwkr/formdrain/utils/ginutil"
+	"github.com/imcrazytwkr/formdrain/constants"
+	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 	"github.com/rs/zerolog"
 )
 
-func (r *formRouter) CheckCORS(c *gin.Context) {
-	log := zerolog.Ctx(c.Request.Context())
+func (r *formRouter) CheckCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		log := zerolog.Ctx(req.Context())
 
-	originHost, err := ginutil.ParseOriginHost(c)
-	if len(originHost) < 1 {
-		if err != nil {
-			ginutil.HandleError(c, http.StatusForbidden, err)
+		originHost, err := httpserver.ParseOriginHost(req)
+		if len(originHost) < 1 {
+			if err != nil {
+				httpserver.HandleError(req.Context(), w, http.StatusForbidden, err)
+			}
+			return
 		}
 
-		return
-	}
+		if err != nil {
+			// Handling invalid Referer header as warning rather than full-blown error
+			log.Warn().Msg(err.Error())
+		}
 
-	if err != nil {
-		// Handling invalid Referer header as warning rather than full-blown error
-		log.Warn().Msg(err.Error())
-	}
+		siteConfig, ok := getSiteConfig(req.Context())
+		if !ok {
+			log.Error().Msg("site config does not exist in context after being attached")
+			httpserver.HandleStatus(req.Context(), w, http.StatusInternalServerError)
+			return
+		}
 
-	siteConfig, ok := getSiteConfig(c)
-	if !ok {
-		log.Error().Msg("site config does not exist in context after being attached")
-		ginutil.HandleStatus(c, http.StatusInternalServerError)
-		return
-	}
+		if originHost != siteConfig.Hostname {
+			log.Warn().Str("request_origin", originHost).Str("expected_origin", siteConfig.Hostname).Msg("CORS origin mismatch")
+			httpserver.HandleError(req.Context(), w, http.StatusForbidden, errInvalidOrigin)
+			return
+		}
 
-	if originHost != siteConfig.Hostname {
-		log.Warn().Str("request_origin", originHost).Str("expected_origin", siteConfig.Hostname).Msg("CORS origin mismatch")
-		ginutil.HandleError(c, http.StatusForbidden, errInvalidOrigin)
-		return
-	}
+		w.Header().Set("Access-Control-Allow-Origin", originHost)
 
-	c.Header("Access-Control-Allow-Origin", originHost)
+		// First call is Set to clear previous values, if any
+		w.Header().Set("Vary", constants.HeaderOrigin)
+		w.Header().Add("Vary", "Access-Control-Request-Method")
+		w.Header().Add("Vary", "Access-Control-Request-Headers")
 
-	// First call is Set to clear previous values, if any
-	c.Writer.Header().Set("Vary", "Origin")
-	c.Writer.Header().Add("Vary", "Access-Control-Request-Method")
-	c.Writer.Header().Add("Vary", "Access-Control-Request-Headers")
+		next.ServeHTTP(w, req)
+	})
 }
 
-func (r *formRouter) HandlePreflight(c *gin.Context) {
+func (r *formRouter) HandlePreflight(w http.ResponseWriter, req *http.Request) {
 	// First call is Set to clear previous values, if any
-	c.Writer.Header().Set("Access-Control-Allow-Methods", http.MethodOptions)
-	c.Writer.Header().Add("Access-Control-Allow-Methods", http.MethodPost)
+	w.Header().Set("Access-Control-Allow-Methods", http.MethodOptions)
+	w.Header().Add("Access-Control-Allow-Methods", http.MethodPost)
 
-	// Empty response body on success
-	c.AbortWithStatus(http.StatusNoContent)
+	w.WriteHeader(http.StatusNoContent)
 }

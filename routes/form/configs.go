@@ -3,48 +3,50 @@ package form
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"github.com/imcrazytwkr/formdrain/utils/ginutil"
+	"github.com/go-chi/chi/v5"
+	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 	"github.com/rs/zerolog"
 )
 
-func (r *formRouter) AttachFormConfigs(c *gin.Context) {
-	ctx := c.Request.Context()
-	log := zerolog.Ctx(ctx)
+func (r *formRouter) AttachFormConfigs(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+		log := zerolog.Ctx(ctx)
 
-	formId := c.Param("formId")
-	formConfig, err := r.formConfigRepository.GetFormConfigById(c.Request.Context(), formId)
-	if err != nil {
-		log.Err(err).Str("form_id", formId).Msg("error fetching form config")
-		ginutil.HandleStatus(c, http.StatusInternalServerError)
-		return
-	}
+		formId := chi.URLParam(req, "formId")
+		formConfig, err := r.formConfigRepository.GetFormConfigById(ctx, formId)
+		if err != nil {
+			log.Err(err).Str("form_id", formId).Msg("error fetching form config")
+			httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
+			return
+		}
 
-	if formConfig == nil {
-		ginutil.HandleError(c, http.StatusNotFound, getErrFormNotFound(formId))
-		return
-	}
+		if formConfig == nil {
+			httpserver.HandleError(ctx, w, http.StatusNotFound, getErrFormNotFound(formId))
+			return
+		}
 
-	if len(formConfig.SiteId) < 1 {
-		log.Error().Str("form_id", formId).Msg("form config has no sideId ref")
-		ginutil.HandleStatus(c, http.StatusInternalServerError)
-		return
-	}
+		if len(formConfig.SiteId) < 1 {
+			log.Error().Str("form_id", formId).Msg("form config has no sideId ref")
+			httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
+			return
+		}
 
-	siteConfig, err := r.siteConfigRepository.GetSiteConfigById(ctx, formConfig.SiteId.String())
-	if err != nil {
-		log.Err(err).Str("form_id", formId).Msg("error fetching site config for form")
-		ginutil.HandleStatus(c, http.StatusInternalServerError)
-		return
-	}
+		siteConfig, err := r.siteConfigRepository.GetSiteConfigById(ctx, formConfig.SiteId.String())
+		if err != nil {
+			log.Err(err).Str("form_id", formId).Msg("error fetching site config for form")
+			httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
+			return
+		}
 
-	if siteConfig == nil {
-		log.Error().Str("form_id", formId).Msg("could not find site config for form")
-		ginutil.HandleStatus(c, http.StatusInternalServerError)
-		return
-	}
+		if siteConfig == nil {
+			log.Error().Str("form_id", formId).Msg("could not find site config for form")
+			httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)
+			return
+		}
 
-	c.Set(keyFormConfig, formConfig)
-	c.Set(keySiteConfig, siteConfig)
-	c.Next()
+		ctx = withFormConfig(ctx, formConfig)
+		ctx = withSiteConfig(ctx, siteConfig)
+		next.ServeHTTP(w, req.WithContext(ctx))
+	})
 }
