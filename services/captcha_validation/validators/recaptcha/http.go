@@ -2,6 +2,7 @@ package recaptcha
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,20 +14,17 @@ import (
 	"github.com/imcrazytwkr/formdrain/services/captcha_validation/validators/common"
 	"github.com/imcrazytwkr/formdrain/utils/maputil"
 	"github.com/imcrazytwkr/formdrain/utils/utf8util"
-	"github.com/valyala/fastjson"
 )
 
 type recaptchaValidator struct {
-	secret     string
-	client     *http.Client
-	parserPool *fastjson.ParserPool
+	secret string
+	client *http.Client
 }
 
 func NewRecaptchaValidator(secret string, client *http.Client) validators.CaptchaValidator {
 	return &recaptchaValidator{
-		secret:     secret,
-		client:     client,
-		parserPool: &fastjson.ParserPool{},
+		secret: secret,
+		client: client,
 	}
 }
 
@@ -72,21 +70,18 @@ func (v *recaptchaValidator) Validate(ctx context.Context, form map[string]any, 
 		return fmt.Errorf("recaptcha backend responded with malformed body: %w", err)
 	}
 
-	parser := v.parserPool.Get()
-	defer v.parserPool.Put(parser)
-
-	value, err := parser.ParseBytes(body)
+	var data recaptchaResponse
+	err = json.Unmarshal(body, &data)
 	if err != nil {
 		return fmt.Errorf("recaptcha backend responded with malformed body: %w", err)
 	}
 
-	if !value.GetBool(successKey) {
+	if !data.Success {
 		return constants.ErrCaptchaNotPassed
 	}
 
-	responseHostname := string(value.GetStringBytes(hostnameKey))
-	if len(responseHostname) > 0 && responseHostname != hostname {
-		log.Warn().Msgf("token hostname mismatch: expected %q but got %q", hostname, responseHostname)
+	if len(data.Hostname) > 0 && data.Hostname != hostname {
+		log.Warn().Msgf("token hostname mismatch: expected %q but got %q", hostname, data.Hostname)
 		return constants.ErrCaptchaNotPassed
 	}
 

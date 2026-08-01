@@ -6,7 +6,6 @@ require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/google/uuid v1.6.0
 	github.com/rs/zerolog v1.35.1
-	github.com/valyala/fastjson v1.6.10
 	github.com/valyala/fasttemplate v1.2.2
 	go.mongodb.org/mongo-driver v1.11.3
 	golang.org/x/text v0.40.0
