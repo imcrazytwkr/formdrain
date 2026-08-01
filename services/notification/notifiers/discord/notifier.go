@@ -10,21 +10,21 @@ import (
 	"github.com/imcrazytwkr/formdrain/models/form_config/discord"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers/discord/models"
-	"github.com/imcrazytwkr/formdrain/types"
 	"github.com/imcrazytwkr/formdrain/utils/httpclient"
+	"github.com/imcrazytwkr/formdrain/utils/httpclient/transports"
 )
 
 type discordNotifier struct {
 	userName string
 	avatar   string
-	client   types.HttpClient
+	client   *http.Client
 }
 
-func NewDiscordNotifier(userName string, avatar string, client types.HttpClient) notifiers.DiscordNotifier {
+func NewDiscordNotifier(userName string, avatar string, client *http.Client) notifiers.DiscordNotifier {
 	return &discordNotifier{
 		userName: userName,
 		avatar:   avatar,
-		client:   httpclient.NewLimitedHttpClient(client, httpRateLimit),
+		client:   httpclient.WithTransport(client, transports.LimitedTransport(client.Transport, rateLimiter)),
 	}
 }
 

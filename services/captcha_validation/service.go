@@ -2,13 +2,13 @@ package captcha_validation
 
 import (
 	"context"
+	"net/http"
 
 	fc "github.com/imcrazytwkr/formdrain/models/form_config"
 	"github.com/imcrazytwkr/formdrain/services"
 	v "github.com/imcrazytwkr/formdrain/services/captcha_validation/validators"
 	"github.com/imcrazytwkr/formdrain/services/captcha_validation/validators/hcaptcha"
 	"github.com/imcrazytwkr/formdrain/services/captcha_validation/validators/recaptcha"
-	"github.com/imcrazytwkr/formdrain/types"
 	"github.com/rs/zerolog"
 )
 
@@ -16,7 +16,7 @@ type httpCaptchaValidationService struct {
 	validators map[fc.CaptchaType]v.CaptchaValidator
 }
 
-func NewHttpCaptchaValidationService(httpClient types.HttpClient, logger *zerolog.Logger) services.CaptchaValidationService {
+func NewHttpCaptchaValidationService(httpClient *http.Client, logger *zerolog.Logger) services.CaptchaValidationService {
 	return &httpCaptchaValidationService{
 		validators: map[fc.CaptchaType]v.CaptchaValidator{
 			fc.CaptchaTypeHcaptcha:  hcaptcha.NewHcaptchaValidator("hcaptcha_secret", httpClient),

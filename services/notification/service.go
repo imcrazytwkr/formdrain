@@ -2,13 +2,13 @@ package notification
 
 import (
 	"errors"
+	"net/http"
 
 	fc "github.com/imcrazytwkr/formdrain/models/form_config"
 	"github.com/imcrazytwkr/formdrain/services"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers"
 	dn "github.com/imcrazytwkr/formdrain/services/notification/notifiers/discord"
 	sn "github.com/imcrazytwkr/formdrain/services/notification/notifiers/sendinblue"
-	"github.com/imcrazytwkr/formdrain/types"
 )
 
 type httpNotificationService struct {
@@ -16,7 +16,7 @@ type httpNotificationService struct {
 	sendinblueNotifier notifiers.SendinblueNotifier
 }
 
-func NewHttpNotificationService(httpClient types.HttpClient) services.NotificationService {
+func NewHttpNotificationService(httpClient *http.Client) services.NotificationService {
 	return &httpNotificationService{
 		discordNotifier:    dn.NewDiscordNotifier("discord_username", "discord_avatar", httpClient),
 		sendinblueNotifier: sn.NewSendinblueNotifier("sender_name", "sender_email", httpClient),

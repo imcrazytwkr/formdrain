@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -17,6 +16,7 @@ import (
 	"github.com/imcrazytwkr/formdrain/routes/form"
 	cvs "github.com/imcrazytwkr/formdrain/services/captcha_validation"
 	ns "github.com/imcrazytwkr/formdrain/services/notification"
+	"github.com/imcrazytwkr/formdrain/utils/httpclient"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -53,8 +53,9 @@ func main() {
 
 	siteConfigRepository := scr.NewMongoSiteConfigRepository(mongoDb)
 
-	captchaValidationService := cvs.NewHttpCaptchaValidationService(http.DefaultClient, &log.Logger)
-	notificationService := ns.NewHttpNotificationService(http.DefaultClient)
+	httpClient := httpclient.DefaultClient()
+	captchaValidationService := cvs.NewHttpCaptchaValidationService(httpClient, &log.Logger)
+	notificationService := ns.NewHttpNotificationService(httpClient)
 
 	form.NewFormRouter(
 		formConfigRepository,

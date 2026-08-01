@@ -9,26 +9,26 @@ import (
 	"github.com/imcrazytwkr/formdrain/models/form_config/sendinblue"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers/sendinblue/models"
-	"github.com/imcrazytwkr/formdrain/types"
 	"github.com/imcrazytwkr/formdrain/utils/httpclient"
+	"github.com/imcrazytwkr/formdrain/utils/httpclient/transports"
 )
 
 type sendinblueNotifier struct {
 	sender *sendinblue.EmailContact
-	client types.HttpClient
+	client *http.Client
 }
 
 func NewSendinblueNotifier(
 	senderName string,
 	senderEmail string,
-	client types.HttpClient,
+	client *http.Client,
 ) notifiers.SendinblueNotifier {
 	return &sendinblueNotifier{
 		sender: &sendinblue.EmailContact{
 			Name:    senderName,
 			Address: senderEmail,
 		},
-		client: httpclient.NewLimitedHttpClient(client, rateLimit),
+		client: httpclient.WithTransport(client, transports.LimitedTransport(client.Transport, rateLimiter)),
 	}
 }
 

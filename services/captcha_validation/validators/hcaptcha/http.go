@@ -11,7 +11,6 @@ import (
 	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/services/captcha_validation/validators"
 	"github.com/imcrazytwkr/formdrain/services/captcha_validation/validators/common"
-	"github.com/imcrazytwkr/formdrain/types"
 	"github.com/imcrazytwkr/formdrain/utils/maputil"
 	"github.com/imcrazytwkr/formdrain/utils/utf8util"
 	"github.com/valyala/fastjson"
@@ -19,11 +18,11 @@ import (
 
 type hcaptchaValidator struct {
 	secret     string
-	httpClient types.HttpClient
+	httpClient *http.Client
 	parserPool *fastjson.ParserPool
 }
 
-func NewHcaptchaValidator(secret string, httpClient types.HttpClient) validators.CaptchaValidator {
+func NewHcaptchaValidator(secret string, httpClient *http.Client) validators.CaptchaValidator {
 	return &hcaptchaValidator{
 		secret:     secret,
 		httpClient: httpClient,
