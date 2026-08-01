@@ -20,7 +20,6 @@ func NewSqliteFormConfigRepository(db *sql.DB) repositories.FormConfigRepository
 
 const selectFormConfigById = `
 SELECT
-	id,
 	site_id,
 	captcha_type,
 	redirect_to,
@@ -43,7 +42,6 @@ func (r *sqliteFormConfigRepository) GetFormConfigById(ctx context.Context, id i
 	var notifiersJSON string
 
 	err := r.db.QueryRowContext(ctx, selectFormConfigById, id).Scan(
-		&config.FormId,
 		&config.SiteId,
 		&rawCaptchaType,
 		&redirectTo,
@@ -83,5 +81,6 @@ func (r *sqliteFormConfigRepository) GetFormConfigById(ctx context.Context, id i
 		return nil, err
 	}
 
+	config.FormId = id
 	return &config, nil
 }
