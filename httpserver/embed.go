@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cbroglie/mustache"
-	"github.com/imcrazytwkr/formdrain/utils/safemustache"
+	"github.com/imcrazytwkr/formdrain/templates"
+	"github.com/imcrazytwkr/formdrain/templates/safemustache"
 )
 
 const templatesDir = "templates"
@@ -16,7 +16,7 @@ const templatesDir = "templates"
 //go:embed templates
 var templateFS embed.FS
 
-var templates = make(map[string]*mustache.Template)
+var embeddedTemplates = make(map[string]templates.Template)
 
 func init() {
 	err := fs.WalkDir(templateFS, templatesDir, func(path string, d fs.DirEntry, err error) error {
@@ -39,7 +39,7 @@ func init() {
 			return fmt.Errorf("%s: %w", name, err)
 		}
 
-		templates[name] = tmpl
+		embeddedTemplates[name] = tmpl
 		return nil
 	})
 
@@ -47,7 +47,7 @@ func init() {
 		panic(fmt.Sprintf("httpserver: load embedded templates: %v", err))
 	}
 
-	if len(templates) < 1 {
+	if len(embeddedTemplates) < 1 {
 		panic("httpserver: load embedded templates: no html templates embedded")
 	}
 }

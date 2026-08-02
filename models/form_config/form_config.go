@@ -1,14 +1,19 @@
 package form_config
 
+import "github.com/imcrazytwkr/formdrain/models/common"
+
 type FormConfig struct {
-	FormId        int64           `json:"id"`
-	SiteId        int64           `json:"site_id"`
-	CaptchaType   CaptchaType     `json:"captcha_type"`
-	CaptchaField  string          `json:"captcha_field,omitempty"`
-	RedirectTo    string          `json:"redirect_to"`
-	FieldSchema   FieldSchema     `json:"field_schema"`
-	SchemaVersion int             `json:"schema_version"`
-	Notifiers     NotifiersConfig `json:"notifiers"`
+	FormId           int64            `json:"id"`
+	SiteId           int64            `json:"site_id"`
+	CaptchaType      CaptchaType      `json:"captcha_type"`
+	CaptchaField     string           `json:"captcha_field,omitempty"`
+	RedirectTo       string           `json:"redirect_to"`
+	FieldSchema      FieldSchema      `json:"field_schema"`
+	SchemaVersion    int              `json:"schema_version"`
+	Notifiers        NotifiersConfig  `json:"notifiers"`
+	SuccessTemplate  *common.Template `json:"success_template,omitempty"`
+	ErrorTemplate    *common.Template `json:"error_template,omitempty"`
+	RedirectTemplate *common.Template `json:"redirect_template,omitempty"`
 }
 
 // CaptchaTokenField is the form map key for the captcha response token.

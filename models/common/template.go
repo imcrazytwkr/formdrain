@@ -2,19 +2,17 @@ package common
 
 import (
 	"encoding/json"
-	"errors"
+	"io"
 
-	"github.com/cbroglie/mustache"
-	"github.com/imcrazytwkr/formdrain/utils/safemustache"
+	"github.com/imcrazytwkr/formdrain/templates"
+	"github.com/imcrazytwkr/formdrain/templates/common"
+	"github.com/imcrazytwkr/formdrain/templates/safemustache"
 )
 
 type Template struct {
 	source string
-	inner  *mustache.Template
+	inner  templates.Template
 }
-
-// @api: internal
-var ErrNilTemplate = errors.New("common: nil template")
 
 func NewTemplate(raw string) (*Template, error) {
 	inner, err := safemustache.Parse(raw)
@@ -28,12 +26,20 @@ func NewTemplate(raw string) (*Template, error) {
 	}, nil
 }
 
-func (t *Template) ExecuteString(data map[string]any) (string, error) {
+func (t *Template) Execute(w io.Writer, data map[string]any) error {
 	if t == nil || t.inner == nil {
-		return "", ErrNilTemplate
+		return common.ErrNilTemplate
 	}
 
-	return t.inner.Render(data)
+	return t.inner.Execute(w, data)
+}
+
+func (t *Template) ExecuteString(data map[string]any) (string, error) {
+	if t == nil || t.inner == nil {
+		return "", common.ErrNilTemplate
+	}
+
+	return t.inner.ExecuteString(data)
 }
 
 func (t Template) MarshalJSON() ([]byte, error) {

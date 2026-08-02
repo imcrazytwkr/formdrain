@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/imcrazytwkr/formdrain/models/common"
 	fc "github.com/imcrazytwkr/formdrain/models/form_config"
 	"github.com/imcrazytwkr/formdrain/repositories"
 )
@@ -26,7 +27,10 @@ SELECT
 	redirect_to,
 	field_schema,
 	schema_version,
-	notifiers
+	notifiers,
+	success_template,
+	error_template,
+	redirect_template
 FROM forms
 WHERE id = ?
 `
@@ -42,6 +46,9 @@ func (r *sqliteFormConfigRepository) GetFormConfigById(ctx context.Context, id i
 	var rawCaptchaType string
 	var fieldSchema string
 	var notifiersJSON string
+	var successTemplate sql.NullString
+	var errorTemplate sql.NullString
+	var redirectTemplate sql.NullString
 
 	err := r.db.QueryRowContext(ctx, selectFormConfigById, id).Scan(
 		&config.SiteId,
@@ -51,6 +58,9 @@ func (r *sqliteFormConfigRepository) GetFormConfigById(ctx context.Context, id i
 		&fieldSchema,
 		&config.SchemaVersion,
 		&notifiersJSON,
+		&successTemplate,
+		&errorTemplate,
+		&redirectTemplate,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -88,6 +98,29 @@ func (r *sqliteFormConfigRepository) GetFormConfigById(ctx context.Context, id i
 		return nil, err
 	}
 
+	config.SuccessTemplate, err = parseOptionalTemplate(successTemplate)
+	if err != nil {
+		return nil, err
+	}
+
+	config.ErrorTemplate, err = parseOptionalTemplate(errorTemplate)
+	if err != nil {
+		return nil, err
+	}
+
+	config.RedirectTemplate, err = parseOptionalTemplate(redirectTemplate)
+	if err != nil {
+		return nil, err
+	}
+
 	config.FormId = id
 	return &config, nil
+}
+
+func parseOptionalTemplate(raw sql.NullString) (*common.Template, error) {
+	if !raw.Valid || len(raw.String) < 1 {
+		return nil, nil
+	}
+
+	return common.NewTemplate(raw.String)
 }

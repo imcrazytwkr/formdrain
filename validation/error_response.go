@@ -54,7 +54,7 @@ func FieldErrorsMap(errs []error) map[string]string {
 	return out
 }
 
-// Returns Mustache-friendly data for the validation error HTML template.
+// TemplateData returns Mustache-friendly data for the validation error HTML template.
 func (r *ValidationErrorResponse) TemplateData() map[string]any {
 	if r == nil {
 		return map[string]any{

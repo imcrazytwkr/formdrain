@@ -3,16 +3,19 @@ package common_test
 import (
 	"encoding/json"
 	"errors"
+	"io"
+	"strings"
 	"testing"
 
-	"github.com/imcrazytwkr/formdrain/models/common"
-	"github.com/imcrazytwkr/formdrain/utils/safemustache"
+	m "github.com/imcrazytwkr/formdrain/models/common"
+	"github.com/imcrazytwkr/formdrain/templates/common"
+	"github.com/imcrazytwkr/formdrain/templates/safemustache"
 )
 
 func TestNewTemplate_Execute(t *testing.T) {
 	t.Parallel()
 
-	tmpl, err := common.NewTemplate("Hello {{name}}")
+	tmpl, err := m.NewTemplate("Hello {{name}}")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +31,7 @@ func TestNewTemplate_Execute(t *testing.T) {
 func TestTemplate_EscapesHTML(t *testing.T) {
 	t.Parallel()
 
-	tmpl, err := common.NewTemplate("{{v}}")
+	tmpl, err := m.NewTemplate("{{v}}")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +47,7 @@ func TestTemplate_EscapesHTML(t *testing.T) {
 func TestTemplate_MissingVariable(t *testing.T) {
 	t.Parallel()
 
-	tmpl, err := common.NewTemplate("Hello {{name}}")
+	tmpl, err := m.NewTemplate("Hello {{name}}")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +60,7 @@ func TestTemplate_MissingVariable(t *testing.T) {
 func TestTemplate_RejectsRaw(t *testing.T) {
 	t.Parallel()
 
-	_, err := common.NewTemplate("{{{name}}}")
+	_, err := m.NewTemplate("{{{name}}}")
 	if !errors.Is(err, safemustache.ErrRawInterpolation) {
 		t.Fatalf("err = %v", err)
 	}
@@ -66,7 +69,7 @@ func TestTemplate_RejectsRaw(t *testing.T) {
 func TestTemplate_JSONRoundTrip(t *testing.T) {
 	t.Parallel()
 
-	tmpl, err := common.NewTemplate("x={{v}}")
+	tmpl, err := m.NewTemplate("x={{v}}")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +82,7 @@ func TestTemplate_JSONRoundTrip(t *testing.T) {
 		t.Fatalf("marshal = %s", raw)
 	}
 
-	var got common.Template
+	var got m.Template
 	if err := json.Unmarshal(raw, &got); err != nil {
 		t.Fatal(err)
 	}
@@ -90,21 +93,50 @@ func TestTemplate_JSONRoundTrip(t *testing.T) {
 	if out != "x=1" {
 		t.Fatalf("got %q", out)
 	}
+
+	raw2, err := json.Marshal(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(raw2) != `"x={{v}}"` {
+		t.Fatalf("remarshal = %s", raw2)
+	}
 }
 
 func TestTemplate_UnmarshalInvalidJSON(t *testing.T) {
 	t.Parallel()
 
-	var got common.Template
+	var got m.Template
 	if err := json.Unmarshal([]byte(`42`), &got); err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestTemplate_Execute(t *testing.T) {
+	t.Parallel()
+
+	tmpl, err := m.NewTemplate("Hi {{name}}")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var buf strings.Builder
+	if err := tmpl.Execute(&buf, map[string]any{"name": "Ada"}); err != nil {
+		t.Fatal(err)
+	}
+	if buf.String() != "Hi Ada" {
+		t.Fatalf("got %q", buf.String())
 	}
 }
 
 func TestTemplate_NilExecute(t *testing.T) {
 	t.Parallel()
 
-	var tmpl *common.Template
+	var tmpl *m.Template
+	if err := tmpl.Execute(io.Discard, nil); !errors.Is(err, common.ErrNilTemplate) {
+		t.Fatalf("err = %v", err)
+	}
+
 	_, err := tmpl.ExecuteString(nil)
 	if !errors.Is(err, common.ErrNilTemplate) {
 		t.Fatalf("err = %v", err)

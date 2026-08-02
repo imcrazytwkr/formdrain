@@ -63,9 +63,27 @@ func TestHandleResponse_JSONMarshalError(t *testing.T) {
 func TestHandleResponse_MissingHTMLTemplate(t *testing.T) {
 	t.Parallel()
 
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic for unknown embedded template")
+		}
+	}()
+
 	w := httptest.NewRecorder()
 	httpserver.HandleResponse(t.Context(), w, http.StatusOK, "missing/nope", nil)
-	if w.Body.String() != http.StatusText(http.StatusOK) {
+}
+
+func TestGetTemplate_OwnerNilFallsBack(t *testing.T) {
+	t.Parallel()
+
+	tmpl := httpserver.GetTemplate("form/success")
+	if tmpl == nil {
+		t.Fatal("expected embedded template")
+	}
+
+	w := httptest.NewRecorder()
+	httpserver.HandleResponseTemplate(t.Context(), w, http.StatusOK, tmpl, map[string]any{})
+	if !strings.Contains(w.Body.String(), "Form submitted") {
 		t.Fatalf("body = %q", w.Body.String())
 	}
 }

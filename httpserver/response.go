@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	m "github.com/imcrazytwkr/formdrain/models/http"
+	"github.com/imcrazytwkr/formdrain/templates"
 	"github.com/rs/zerolog"
 )
 
@@ -25,7 +26,26 @@ func HandleResponse(ctx context.Context, w http.ResponseWriter, status int, name
 	case m.ContentTypeJSON:
 		writeJSON(ctx, w, status, params)
 	case m.ContentTypeHTML:
-		writeHTML(ctx, w, status, name, params)
+		writeHTML(ctx, w, status, GetTemplate(name), params)
+	}
+}
+
+func HandleResponseTemplate(ctx context.Context, w http.ResponseWriter, status int, template templates.Template, params any) {
+	format := responseFormat(w)
+
+	str, ok := params.(string)
+	if ok {
+		setResponseContentType(w, format)
+		w.WriteHeader(status)
+		io.WriteString(w, str)
+		return
+	}
+
+	switch format {
+	case m.ContentTypeJSON:
+		writeJSON(ctx, w, status, params)
+	case m.ContentTypeHTML:
+		writeHTML(ctx, w, status, template, params)
 	}
 }
 
@@ -49,21 +69,15 @@ type templateDataProvider interface {
 	TemplateData() map[string]any
 }
 
-func writeHTML(ctx context.Context, w http.ResponseWriter, status int, name string, params any) {
+func writeHTML(ctx context.Context, w http.ResponseWriter, status int, template templates.Template, params any) {
+	if template == nil {
+		panic("httpserver: writeHTML called with nil template")
+	}
+
 	setResponseContentType(w, m.ContentTypeHTML)
 	w.WriteHeader(status)
 
 	log := zerolog.Ctx(ctx)
-
-	tmpl, ok := templates[name]
-	if !ok || tmpl == nil {
-		log.Error().Str("template", name).Msg("template not found")
-		_, err := io.WriteString(w, http.StatusText(status))
-		if err != nil {
-			log.Error().Err(err).Msg("failed to write fallback plain-text response")
-		}
-		return
-	}
 
 	var data map[string]any
 	switch p := params.(type) {
@@ -74,7 +88,7 @@ func writeHTML(ctx context.Context, w http.ResponseWriter, status int, name stri
 	default:
 		if params != nil {
 			log.Warn().
-				Str("template", name).
+				// Str("template", name).
 				Type("params_type", params).
 				Msg("unsupported HTML template params; using empty data")
 		}
@@ -82,7 +96,7 @@ func writeHTML(ctx context.Context, w http.ResponseWriter, status int, name stri
 		data = map[string]any{}
 	}
 
-	err := tmpl.FRender(w, data)
+	err := template.Execute(w, data)
 	if err == nil {
 		return
 	}

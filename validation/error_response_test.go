@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestHTMLContext(t *testing.T) {
+func TestTemplateData(t *testing.T) {
 	t.Parallel()
 
 	t.Run("empty errors", func(t *testing.T) {

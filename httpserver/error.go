@@ -45,7 +45,7 @@ func handleErrorMessage(ctx context.Context, w http.ResponseWriter, status int, 
 			"message": message,
 		})
 	case m.ContentTypeHTML:
-		writeHTML(ctx, w, status, "errors/generic", map[string]any{
+		writeHTML(ctx, w, status, GetTemplate("errors/generic"), map[string]any{
 			"status":  status,
 			"title":   http.StatusText(status),
 			"message": message,

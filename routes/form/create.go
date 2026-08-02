@@ -93,7 +93,17 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 	payload, err := validation.ValidateFormPayload(formConfig.FieldSchema, formData)
 	if err != nil {
 		response := validation.NewValidationErrorResponse(http.StatusBadRequest, err)
-		httpserver.HandleResponse(ctx, w, http.StatusBadRequest, "errors/validation", response)
+		template := httpserver.GetTemplate("errors/validation")
+		if formConfig.ErrorTemplate != nil {
+			template = formConfig.ErrorTemplate
+		}
+		httpserver.HandleResponseTemplate(
+			ctx,
+			w,
+			http.StatusBadRequest,
+			template,
+			response,
+		)
 		return
 	}
 
@@ -114,9 +124,31 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 	r.notificaionService.SendAsync(ctx, formConfig.Notifiers, payload)
 
 	if len(formConfig.RedirectTo) > 0 {
-		httpserver.HandleRedirect(ctx, w, http.StatusSeeOther, "form/redirect", formConfig.RedirectTo, nil)
+		template := httpserver.GetTemplate("form/redirect")
+		if formConfig.RedirectTemplate != nil {
+			template = formConfig.RedirectTemplate
+		}
+
+		httpserver.HandleRedirectTemplate(
+			ctx,
+			w,
+			http.StatusSeeOther,
+			template,
+			formConfig.RedirectTo,
+			map[string]any{"redirect_to": formConfig.RedirectTo},
+		)
 		return
 	}
 
-	httpserver.HandleResponse(ctx, w, http.StatusOK, "form/success", map[string]any{})
+	template := httpserver.GetTemplate("form/success")
+	if formConfig.SuccessTemplate != nil {
+		template = formConfig.SuccessTemplate
+	}
+	httpserver.HandleResponseTemplate(
+		ctx,
+		w,
+		http.StatusOK,
+		template,
+		map[string]any{},
+	)
 }

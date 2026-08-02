@@ -6,7 +6,8 @@ import (
 	"testing"
 
 	"github.com/cbroglie/mustache"
-	"github.com/imcrazytwkr/formdrain/utils/safemustache"
+	"github.com/imcrazytwkr/formdrain/templates/common"
+	"github.com/imcrazytwkr/formdrain/templates/safemustache"
 )
 
 func TestAllowMissingVariablesDisabled(t *testing.T) {
@@ -23,7 +24,7 @@ func TestParse_Rejects(t *testing.T) {
 		src     string
 		wantErr error
 	}{
-		{name: "empty", src: "", wantErr: safemustache.ErrEmpty},
+		{name: "empty", src: "", wantErr: common.ErrEmpty},
 		{name: "raw triple", src: "Hello {{{name}}}", wantErr: safemustache.ErrRawInterpolation},
 		{name: "raw amp", src: "Hello {{& name}}", wantErr: safemustache.ErrRawInterpolation},
 		{name: "raw amp tight", src: "Hello {{&name}}", wantErr: safemustache.ErrRawInterpolation},
@@ -32,7 +33,7 @@ func TestParse_Rejects(t *testing.T) {
 		{
 			name:    "too large",
 			src:     strings.Repeat("a", safemustache.MaxSourceBytes+1),
-			wantErr: safemustache.ErrTooLarge,
+			wantErr: common.ErrTooLarge,
 		},
 	}
 
@@ -55,7 +56,7 @@ func TestParse_HappyAndEscape(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := tmpl.Render(map[string]any{"name": "world"})
+	got, err := tmpl.ExecuteString(map[string]any{"name": "world"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +64,7 @@ func TestParse_HappyAndEscape(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 
-	got, err = tmpl.Render(map[string]any{"name": "<script>x</script>"})
+	got, err = tmpl.ExecuteString(map[string]any{"name": "<script>x</script>"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +84,7 @@ func TestParse_SectionsAndLists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := tmpl.Render(map[string]any{"items": []string{"a", "b"}})
+	got, err := tmpl.ExecuteString(map[string]any{"items": []string{"a", "b"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +92,7 @@ func TestParse_SectionsAndLists(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 
-	got, err = tmpl.Render(map[string]any{"items": []string{}})
+	got, err = tmpl.ExecuteString(map[string]any{"items": []string{}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +110,7 @@ func TestParse_ErrorsEntryList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := tmpl.Render(map[string]any{
+	got, err := tmpl.ExecuteString(map[string]any{
 		"errors": []map[string]string{
 			{"field": "email", "message": "required"},
 		},
@@ -121,7 +122,7 @@ func TestParse_ErrorsEntryList(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 
-	got, err = tmpl.Render(map[string]any{"errors": []map[string]string{}})
+	got, err = tmpl.ExecuteString(map[string]any{"errors": []map[string]string{}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +139,7 @@ func TestParse_DottedNames(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := tmpl.Render(map[string]any{
+	got, err := tmpl.ExecuteString(map[string]any{
 		"user": map[string]any{"name": "Ada"},
 	})
 	if err != nil {
@@ -157,7 +158,7 @@ func TestParse_MissingVariable(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = tmpl.Render(map[string]any{})
+	_, err = tmpl.ExecuteString(map[string]any{})
 	if err == nil {
 		t.Fatal("expected error for missing variable")
 	}
@@ -175,11 +176,38 @@ func TestParse_MaxExactSizeOK(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := tmpl.Render(map[string]any{"x": "z"})
+	got, err := tmpl.ExecuteString(map[string]any{"x": "z"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.HasSuffix(got, "z") {
 		t.Fatalf("got %q", got)
+	}
+}
+
+func BenchmarkParse(b *testing.B) {
+	// Roughly a small owner HTML page (well under MaxSourceBytes).
+	src := `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>{{title}}</title></head>
+<body>
+<h1>{{title}}</h1>
+<p>{{message}}</p>
+<ul>
+{{#errors}}
+<li><strong>{{field}}</strong>: {{message}}</li>
+{{/errors}}
+</ul>
+</body>
+</html>`
+	src = strings.Repeat("<!-- pad -->\n", 80) + src
+
+	b.ReportAllocs()
+
+	for b.Loop() {
+		_, err := safemustache.Parse(src)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }

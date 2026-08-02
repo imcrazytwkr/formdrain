@@ -53,6 +53,10 @@ func TestGetFormConfigById(t *testing.T) {
 	if got.SchemaVersion != 1 || len(got.FieldSchema.Fields) != 1 || got.FieldSchema.Fields[0].Name != "email" {
 		t.Fatalf("schema: %+v", got.FieldSchema)
 	}
+	if got.SuccessTemplate != nil || got.ErrorTemplate != nil || got.RedirectTemplate != nil {
+		t.Fatalf("expected nil page templates, got success=%v error=%v redirect=%v",
+			got.SuccessTemplate != nil, got.ErrorTemplate != nil, got.RedirectTemplate != nil)
+	}
 
 	missing, err := repo.GetFormConfigById(ctx, 999)
 	if err != nil {
@@ -147,5 +151,65 @@ func TestGetFormConfigById_CaptchaField(t *testing.T) {
 	}
 	if got.CaptchaTokenField() != "cf-turnstile-response" {
 		t.Fatalf("CaptchaTokenField = %q", got.CaptchaTokenField())
+	}
+}
+
+func TestGetFormConfigById_PageTemplates(t *testing.T) {
+	db := testutil.OpenSqlite(t)
+	ctx := t.Context()
+
+	_, err := db.Exec(`
+		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
+		INSERT INTO forms (
+			id, site_id, captcha_type, field_schema, schema_version, notifiers,
+			success_template, error_template, redirect_template
+		) VALUES (
+			31, 1, 'hcaptcha', '{"version":1,"fields":[]}', 1, '{}',
+			'<p>ok {{x}}</p>',
+			'<p>err {{message}}</p>',
+			'<p>go {{redirect_to}}</p>'
+		);
+	`)
+	if err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	repo := fcr.NewSqliteFormConfigRepository(db)
+	got, err := repo.GetFormConfigById(ctx, 31)
+	if err != nil {
+		t.Fatalf("GetFormConfigById: %v", err)
+	}
+	if got.SuccessTemplate == nil || got.ErrorTemplate == nil || got.RedirectTemplate == nil {
+		t.Fatal("expected all page templates set")
+	}
+
+	out, err := got.SuccessTemplate.ExecuteString(map[string]any{"x": "1"})
+	if err != nil || out != "<p>ok 1</p>" {
+		t.Fatalf("success render: %q err=%v", out, err)
+	}
+}
+
+func TestGetFormConfigById_InvalidPageTemplate(t *testing.T) {
+	db := testutil.OpenSqlite(t)
+	ctx := t.Context()
+
+	_, err := db.Exec(`
+		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
+		INSERT INTO forms (
+			id, site_id, captcha_type, field_schema, schema_version, notifiers,
+			error_template
+		) VALUES (
+			32, 1, 'hcaptcha', '{"version":1,"fields":[]}', 1, '{}',
+			'{{{raw}}}'
+		);
+	`)
+	if err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	repo := fcr.NewSqliteFormConfigRepository(db)
+	_, err = repo.GetFormConfigById(ctx, 32)
+	if err == nil {
+		t.Fatal("expected template parse error")
 	}
 }

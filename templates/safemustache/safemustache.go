@@ -16,6 +16,8 @@ import (
 	"strings"
 
 	"github.com/cbroglie/mustache"
+	"github.com/imcrazytwkr/formdrain/templates"
+	"github.com/imcrazytwkr/formdrain/templates/common"
 )
 
 const MaxSourceBytes = 64 << 10
@@ -25,13 +27,13 @@ func init() {
 }
 
 // Parse validates and compiles src. Safe to call at config-save time.
-func Parse(src string) (*mustache.Template, error) {
+func Parse(src string) (templates.Template, error) {
 	if len(src) < 1 {
-		return nil, ErrEmpty
+		return nil, common.ErrEmpty
 	}
 
 	if len(src) > MaxSourceBytes {
-		return nil, ErrTooLarge
+		return nil, common.ErrTooLarge
 	}
 
 	if err := scanForbidden(src); err != nil {
@@ -48,7 +50,7 @@ func Parse(src string) (*mustache.Template, error) {
 		return nil, err
 	}
 
-	return tmpl, nil
+	return NewTemplate(tmpl)
 }
 
 func scanForbidden(src string) error {

@@ -254,6 +254,27 @@ func TestCreate_JSONHappyPath(t *testing.T) {
 	}
 }
 
+func TestCreate_HTMLSuccess_EmbeddedFallback(t *testing.T) {
+	h := newHarness(t)
+	h.seed(t, 10, "")
+
+	req := httptest.NewRequest(http.MethodPost, "/form/10/", strings.NewReader(`{"email":"a@b.c","h-captcha":"tok"}`))
+	req.RemoteAddr = "203.0.113.10:1234"
+	req.Host = "api.example.com"
+	req.Header.Set(constants.HeaderContentType, constants.ContentTypeJson)
+	req.Header.Set(constants.HeaderOrigin, "https://example.com")
+	req.Header.Set(constants.HeaderAccept, m.ContentTypeHTML.String())
+	w := httptest.NewRecorder()
+	h.handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %q", w.Code, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "Form submitted") {
+		t.Fatalf("expected embedded success template, got %q", w.Body.String())
+	}
+}
+
 func TestCreate_FormRedirect(t *testing.T) {
 	h := newHarness(t)
 	h.seed(t, 11, "https://example.com/thanks")
@@ -403,8 +424,78 @@ func TestCreate_ValidationError(t *testing.T) {
 	if body["status"] != float64(http.StatusBadRequest) {
 		t.Fatalf("body = %#v", body)
 	}
+	errorsObj, ok := body["errors"].(map[string]any)
+	if !ok || errorsObj["extra"] == nil {
+		t.Fatalf("expected map-shaped errors, got %#v", body["errors"])
+	}
 	if h.responseCount(t, 10) != 0 {
 		t.Fatal("should not store")
+	}
+}
+
+func TestCreate_ValidationError_OwnerHTMLTemplate(t *testing.T) {
+	h := newHarness(t)
+	h.seed(t, 10, "")
+
+	_, err := h.db.Exec(`
+		UPDATE forms SET error_template = ?
+		WHERE id = 10
+	`, `<html><body>OWNER-VALIDATION {{message}}</body></html>`)
+	if err != nil {
+		t.Fatalf("set error template: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/form/10/", strings.NewReader(`{"email":"a@b.c","extra":true}`))
+	req.RemoteAddr = "203.0.113.10:1234"
+	req.Host = "api.example.com"
+	req.Header.Set(constants.HeaderContentType, constants.ContentTypeJson)
+	req.Header.Set(constants.HeaderOrigin, "https://example.com")
+	req.Header.Set(constants.HeaderAccept, m.ContentTypeHTML.String())
+	w := httptest.NewRecorder()
+	h.handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d body = %q", w.Code, w.Body.String())
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "OWNER-VALIDATION") {
+		t.Fatalf("expected owner template body, got %q", body)
+	}
+	if strings.Contains(body, "<ul>") {
+		t.Fatalf("expected not to use system validation template, got %q", body)
+	}
+}
+
+func TestCreate_Redirect_RendersInterstitial(t *testing.T) {
+	h := newHarness(t)
+	h.seed(t, 10, "https://example.com/thanks")
+
+	_, err := h.db.Exec(`
+		UPDATE forms SET redirect_template = ?
+		WHERE id = 10
+	`, `<html><body>GO-TO {{redirect_to}}</body></html>`)
+	if err != nil {
+		t.Fatalf("set redirect template: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/form/10/", strings.NewReader(`{"email":"a@b.c","h-captcha":"tok"}`))
+	req.RemoteAddr = "203.0.113.10:1234"
+	req.Host = "api.example.com"
+	req.Header.Set(constants.HeaderContentType, constants.ContentTypeJson)
+	req.Header.Set(constants.HeaderOrigin, "https://example.com")
+	req.Header.Set(constants.HeaderAccept, m.ContentTypeHTML.String())
+	w := httptest.NewRecorder()
+	h.handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d body = %q", w.Code, w.Body.String())
+	}
+	if loc := w.Header().Get(constants.HeaderLocation); loc != "https://example.com/thanks" {
+		t.Fatalf("location = %q", loc)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "GO-TO") || !strings.Contains(body, "https://example.com/thanks") {
+		t.Fatalf("expected owner redirect interstitial, got %q", body)
 	}
 }
 
