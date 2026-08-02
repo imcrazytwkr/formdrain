@@ -118,3 +118,32 @@ func TestJsonParser_EmptyObject(t *testing.T) {
 		t.Fatalf("got %#v", got)
 	}
 }
+
+func TestJsonParser_NestedObjectSkipped(t *testing.T) {
+	t.Parallel()
+
+	p := bodyparser.NewJsonParser()
+	got, err := p.Parse([]byte(`{"name":"Ada","meta":{"x":1}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got["name"] != "Ada" {
+		t.Fatalf("name = %#v", got["name"])
+	}
+	if _, ok := got["meta"]; ok {
+		t.Fatalf("nested object should be skipped: %#v", got)
+	}
+}
+
+func TestJsonParser_EmptyArrayOmitted(t *testing.T) {
+	t.Parallel()
+
+	p := bodyparser.NewJsonParser()
+	got, err := p.Parse([]byte(`{"tags":[]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := got["tags"]; ok {
+		t.Fatalf("empty array should be omitted: %#v", got)
+	}
+}

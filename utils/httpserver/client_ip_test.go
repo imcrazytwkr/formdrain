@@ -75,3 +75,13 @@ func TestClientIP(t *testing.T) {
 		})
 	}
 }
+
+func TestRemoteIP_Malformed(t *testing.T) {
+	t.Parallel()
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.RemoteAddr = "not-an-ip"
+	if got := httpserver.RemoteIP(r); got.IsValid() {
+		t.Fatalf("got %v", got)
+	}
+}

@@ -2,7 +2,9 @@ package form_response_test
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/netip"
 	"testing"
 
@@ -65,5 +67,47 @@ func TestSaveFormResponse(t *testing.T) {
 	}
 	if parsed["email"] != "a@b.c" {
 		t.Fatalf("payload: %#v", parsed)
+	}
+}
+
+func TestSaveFormResponse_Nil(t *testing.T) {
+	db := testutil.OpenSqlite(t)
+	repo := frr.NewSqliteFormResponseRepository(db)
+	_, err := repo.SaveFormResponse(context.Background(), nil)
+	if !errors.Is(err, frr.ErrEmptyFormResponse) {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestSaveFormResponse_NoClientIP(t *testing.T) {
+	db := testutil.OpenSqlite(t)
+	ctx := context.Background()
+
+	_, err := db.Exec(`
+		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
+		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
+		VALUES (10, 1, 'hcaptcha', '{"version":1,"fields":[]}', 1, '{}');
+	`)
+	if err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	repo := frr.NewSqliteFormResponseRepository(db)
+	id, err := repo.SaveFormResponse(ctx, &form_response.FormResponse{
+		FormId:        10,
+		SchemaVersion: 1,
+		Payload:       map[string]any{},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var clientIP sql.NullString
+	err = db.QueryRow(`SELECT client_ip FROM form_responses WHERE id = ?`, id).Scan(&clientIP)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if clientIP.Valid {
+		t.Fatalf("expected NULL client_ip, got %q", clientIP.String)
 	}
 }

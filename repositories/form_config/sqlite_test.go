@@ -65,3 +65,63 @@ func TestGetFormConfigById(t *testing.T) {
 		t.Fatalf("id 0: got %v err %v", invalid, err)
 	}
 }
+
+func TestGetFormConfigById_CorruptFieldSchema(t *testing.T) {
+	db := testutil.OpenSqlite(t)
+	ctx := context.Background()
+
+	_, err := db.Exec(`
+		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
+		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
+		VALUES (20, 1, 'hcaptcha', '"not-an-object"', 1, '{}');
+	`)
+	if err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	repo := fcr.NewSqliteFormConfigRepository(db)
+	_, err = repo.GetFormConfigById(ctx, 20)
+	if err == nil {
+		t.Fatal("expected unmarshal error")
+	}
+}
+
+func TestGetFormConfigById_InvalidCaptchaType(t *testing.T) {
+	db := testutil.OpenSqlite(t)
+	ctx := context.Background()
+
+	_, err := db.Exec(`
+		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
+		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
+		VALUES (21, 1, 'bogus', '{"version":1,"fields":[]}', 1, '{}');
+	`)
+	if err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	repo := fcr.NewSqliteFormConfigRepository(db)
+	_, err = repo.GetFormConfigById(ctx, 21)
+	if err == nil {
+		t.Fatal("expected captcha type error")
+	}
+}
+
+func TestGetFormConfigById_CorruptNotifiers(t *testing.T) {
+	db := testutil.OpenSqlite(t)
+	ctx := context.Background()
+
+	_, err := db.Exec(`
+		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
+		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
+		VALUES (22, 1, 'hcaptcha', '{"version":1,"fields":[]}', 1, '"nope"');
+	`)
+	if err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	repo := fcr.NewSqliteFormConfigRepository(db)
+	_, err = repo.GetFormConfigById(ctx, 22)
+	if err == nil {
+		t.Fatal("expected notifiers unmarshal error")
+	}
+}

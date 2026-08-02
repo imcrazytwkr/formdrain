@@ -52,3 +52,37 @@ func TestHandleResponse_HTML(t *testing.T) {
 		t.Fatalf("body = %q", w.Body.String())
 	}
 }
+
+func TestHandleResponse_JSONMarshalError(t *testing.T) {
+	w := httptest.NewRecorder()
+	w.Header().Set(constants.HeaderContentType, m.ContentTypeJSON.String())
+	httpserver.HandleResponse(context.Background(), w, http.StatusOK, "", make(chan int))
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d", w.Code)
+	}
+	if w.Body.Len() != 0 {
+		t.Fatalf("expected empty body on marshal failure, got %q", w.Body.String())
+	}
+}
+
+func TestHandleResponse_MissingHTMLTemplate(t *testing.T) {
+	err := httpserver.LoadTemplatesFromPath(filepath.Join("..", "..", "templates"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := httptest.NewRecorder()
+	httpserver.HandleResponse(context.Background(), w, http.StatusOK, "missing/nope.html", nil)
+	if w.Body.String() != http.StatusText(http.StatusOK) {
+		t.Fatalf("body = %q", w.Body.String())
+	}
+}
+
+func TestHandleError_NonStandardStatus(t *testing.T) {
+	w := httptest.NewRecorder()
+	w.Header().Set(constants.HeaderContentType, m.ContentTypeJSON.String())
+	httpserver.HandleStatus(context.Background(), w, 599)
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d", w.Code)
+	}
+}

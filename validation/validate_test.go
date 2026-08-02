@@ -215,3 +215,64 @@ func TestValidateFormPayload_AccumulatesErrors(t *testing.T) {
 		t.Fatalf("extra: %#v", errs["extra"])
 	}
 }
+
+func TestValidateFormPayload_Float64Number(t *testing.T) {
+	s := schema(fc.Field{Name: "score", Type: fc.FieldTypeNumber, Required: true})
+	got, err := validation.ValidateFormPayload(s, map[string]any{"score": 1.5})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got["score"] != 1.5 {
+		t.Fatalf("got %#v", got)
+	}
+}
+
+func TestValidateFormPayload_EmptyStringCoercionFails(t *testing.T) {
+	s := schema(
+		fc.Field{Name: "age", Type: fc.FieldTypeNumber, Required: true},
+		fc.Field{Name: "ok", Type: fc.FieldTypeBoolean, Required: true},
+	)
+	_, err := validation.ValidateFormPayload(s, map[string]any{"age": "", "ok": ""})
+	if !errors.Is(err, validation.ErrInvalidFieldType) {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestFieldError_ErrorAndUnwrap(t *testing.T) {
+	var nilErr *validation.FieldError
+	if nilErr.Error() != "form field validation failed" {
+		t.Fatalf("nil: %q", nilErr.Error())
+	}
+	if nilErr.Unwrap() != nil {
+		t.Fatal("nil unwrap")
+	}
+
+	err := &validation.FieldError{Field: "email", Err: validation.ErrMissingRequiredField}
+	if err.Error() != "email: "+validation.ErrMissingRequiredField.Error() {
+		t.Fatalf("err = %q", err.Error())
+	}
+	if !errors.Is(err, validation.ErrMissingRequiredField) {
+		t.Fatal("unwrap")
+	}
+
+	bare := &validation.FieldError{Err: validation.ErrUnknownField}
+	if bare.Error() != validation.ErrUnknownField.Error() {
+		t.Fatalf("bare = %q", bare.Error())
+	}
+}
+
+func TestNewValidationErrorResponse_SingleError(t *testing.T) {
+	response := validation.NewValidationErrorResponse(http.StatusBadRequest, validation.ErrUnknownField)
+	if response.Message != validation.ErrUnknownField.Error() {
+		t.Fatalf("message = %q", response.Message)
+	}
+	if response.Errors != nil {
+		t.Fatalf("errors = %#v", response.Errors)
+	}
+}
+
+func TestFieldErrorsMap_Empty(t *testing.T) {
+	if validation.FieldErrorsMap(nil) != nil {
+		t.Fatal("expected nil")
+	}
+}
