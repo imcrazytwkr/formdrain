@@ -16,9 +16,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/constants"
+	"github.com/imcrazytwkr/formdrain/middleware"
 	fc "github.com/imcrazytwkr/formdrain/models/form_config"
 	m "github.com/imcrazytwkr/formdrain/models/http"
-	"github.com/imcrazytwkr/formdrain/middleware"
 	fcr "github.com/imcrazytwkr/formdrain/repositories/form_config"
 	frr "github.com/imcrazytwkr/formdrain/repositories/form_response"
 	scr "github.com/imcrazytwkr/formdrain/repositories/site_config"
@@ -83,7 +83,7 @@ func newHarness(t *testing.T) *harness {
 			frr.NewSqliteFormResponseRepository(db),
 			captcha,
 			notifier,
-		).Register(r)
+		).Router(r)
 	})
 
 	return &harness{

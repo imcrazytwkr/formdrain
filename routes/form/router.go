@@ -32,12 +32,12 @@ func NewFormRouter(
 	}
 }
 
-func (r *formRouter) Register(router chi.Router) {
-	router.Route("/{formId}", func(rtr chi.Router) {
-		rtr.Use(middleware.ContentTypeParser())
-		rtr.Use(r.AttachFormConfigs)
-		rtr.Use(r.CheckCORS)
-		rtr.Options("/", r.HandlePreflight)
-		rtr.Post("/", r.HandleCreateForm)
+func (r *formRouter) Router(router chi.Router) {
+	router.Route("/{formId}", func(route chi.Router) {
+		route.Use(middleware.ContentTypeParser())
+		route.Use(r.AttachFormConfigs)
+		route.Use(r.CheckCORS)
+		route.Options("/", r.HandlePreflight)
+		route.Post("/", r.HandleCreateForm)
 	})
 }

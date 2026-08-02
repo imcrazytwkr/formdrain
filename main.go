@@ -63,15 +63,15 @@ func main() {
 	captchaValidationService := cvs.NewHttpCaptchaValidationService(httpClient, &log.Logger)
 	notificationService := ns.NewHttpNotificationService(httpClient)
 
-	router.Route("/form", func(r chi.Router) {
+	router.Route("/form",
 		form.NewFormRouter(
 			formConfigRepository,
 			siteConfigRepository,
 			formResponseRepository,
 			captchaValidationService,
 			notificationService,
-		).Register(r)
-	})
+		).Router,
+	)
 
 	addr := net.JoinHostPort(listenHost, listenPort)
 	err = http.ListenAndServe(addr, router)
