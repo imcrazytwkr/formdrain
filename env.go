@@ -75,3 +75,11 @@ func sqliteFilePath(u *url.URL) (string, error) {
 
 	return path, nil
 }
+
+func getBrevoAPIKey() (string, error) {
+	key := os.Getenv("BREVO_API_KEY")
+	if len(key) < 1 {
+		return "", errors.New("BREVO_API_KEY is not set")
+	}
+	return key, nil
+}

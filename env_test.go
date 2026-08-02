@@ -65,6 +65,20 @@ func TestGetDBURL(t *testing.T) {
 	}
 }
 
+func TestGetBrevoAPIKey(t *testing.T) {
+	t.Setenv("BREVO_API_KEY", "")
+	_, err := getBrevoAPIKey()
+	if err == nil {
+		t.Fatal("expected unset error")
+	}
+
+	t.Setenv("BREVO_API_KEY", "secret-key")
+	got, err := getBrevoAPIKey()
+	if err != nil || got != "secret-key" {
+		t.Fatalf("got %q err %v", got, err)
+	}
+}
+
 func TestSqliteFilePath(t *testing.T) {
 	u, err := url.Parse("sqlite:/tmp/form.db")
 	if err != nil {

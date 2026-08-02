@@ -16,10 +16,10 @@ type httpNotificationService struct {
 	brevoNotifier   notifiers.BrevoNotifier
 }
 
-func NewHttpNotificationService(httpClient *http.Client) services.NotificationService {
+func NewHttpNotificationService(httpClient *http.Client, brevoAPIKey string) services.NotificationService {
 	return &httpNotificationService{
 		discordNotifier: dn.NewDiscordNotifier("discord_username", "discord_avatar", httpClient),
-		brevoNotifier:   bn.NewBrevoNotifier("sender_name", "sender_email", "brevo_api_key", httpClient),
+		brevoNotifier:   bn.NewBrevoNotifier("sender_name", "sender_email", brevoAPIKey, httpClient),
 	}
 }
 

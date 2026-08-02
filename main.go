@@ -55,7 +55,13 @@ func main() {
 
 	httpClient := httpclient.DefaultClient()
 	captchaValidationService := cvs.NewHttpCaptchaValidationService(httpClient, &log.Logger)
-	notificationService := ns.NewHttpNotificationService(httpClient)
+
+	brevoAPIKey, err := getBrevoAPIKey()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to load Brevo API key")
+	}
+
+	notificationService := ns.NewHttpNotificationService(httpClient, brevoAPIKey)
 
 	router.Route("/form",
 		form.NewFormRouter(
