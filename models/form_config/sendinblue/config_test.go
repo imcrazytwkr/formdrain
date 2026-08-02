@@ -15,8 +15,21 @@ func TestRenderContent(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg := &sendinblue.SendinblueConfig{Template: tmpl}
-	got := cfg.RenderContent(map[string]any{"email": "a@b.c"})
+	got, err := cfg.RenderContent(map[string]any{"email": "a@b.c"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if got != "body=a@b.c" {
 		t.Fatalf("got %q", got)
+	}
+}
+
+func TestRenderContent_NilTemplate(t *testing.T) {
+	t.Parallel()
+
+	cfg := &sendinblue.SendinblueConfig{}
+	got, err := cfg.RenderContent(map[string]any{"email": "a@b.c"})
+	if err != nil || got != "" {
+		t.Fatalf("got %q err %v", got, err)
 	}
 }

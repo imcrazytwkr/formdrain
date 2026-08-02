@@ -60,10 +60,15 @@ func (n *sendinblueNotifier) Send(config *sendinblue.SendinblueConfig, form map[
 		return nil
 	}
 
+	content, err := config.RenderContent(form)
+	if err != nil {
+		return err
+	}
+
 	return n.send(&models.Request{
 		Sender:     n.sender,
 		Recipients: config.Recipients,
 		Subject:    config.Subject,
-		Content:    config.RenderContent(form),
+		Content:    content,
 	})
 }

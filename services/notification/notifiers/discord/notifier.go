@@ -68,11 +68,16 @@ func (n *discordNotifier) Send(config *discord.DiscordConfig, form map[string]an
 		return nil
 	}
 
+	description, err := config.RenderContent(form)
+	if err != nil {
+		return err
+	}
+
 	request := n.makeRequest(&models.Embed{
 		Author:      config.Author,
 		Title:       config.Title,
 		Url:         config.Url,
-		Description: config.RenderContent(form),
+		Description: description,
 		Color:       config.Color,
 	})
 

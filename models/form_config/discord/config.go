@@ -13,6 +13,9 @@ type DiscordConfig struct {
 	Color    int              `json:"color,omitempty"`
 }
 
-func (c *DiscordConfig) RenderContent(form map[string]any) string {
+func (c *DiscordConfig) RenderContent(form map[string]any) (string, error) {
+	if c == nil || c.Template == nil {
+		return "", nil
+	}
 	return c.Template.ExecuteString(form)
 }
