@@ -33,7 +33,7 @@ type fakeCaptcha struct {
 func (f *fakeCaptcha) Validate(
 	_ context.Context,
 	_ fc.CaptchaType,
-	_ map[string]any,
+	_ string,
 	_ string,
 	_ netip.Addr,
 ) error {
@@ -436,5 +436,31 @@ func TestCreate_JSONBodyInfersResponseFormat(t *testing.T) {
 	}
 	if !json.Valid(w.Body.Bytes()) {
 		t.Fatalf("expected JSON body, got %q", w.Body.String())
+	}
+}
+
+func TestCreate_CustomCaptchaField(t *testing.T) {
+	h := newHarness(t)
+	h.seed(t, 10, "")
+
+	_, err := h.db.Exec(`UPDATE forms SET captcha_field = ? WHERE id = 10`, "cf-turnstile-response")
+	if err != nil {
+		t.Fatalf("set captcha_field: %v", err)
+	}
+
+	hdr := http.Header{}
+	hdr.Set(constants.HeaderAccept, m.ContentTypeJSON.String())
+	w := h.postJSON(t, "10", `{"email":"a@b.c","cf-turnstile-response":"tok"}`, hdr)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %q", w.Code, w.Body.String())
+	}
+	if h.captcha.calls != 1 {
+		t.Fatalf("captcha calls = %d", h.captcha.calls)
+	}
+	if _, ok := h.notifier.last["cf-turnstile-response"]; ok {
+		t.Fatalf("captcha token leaked into payload: %#v", h.notifier.last)
+	}
+	if h.notifier.last["email"] != "a@b.c" {
+		t.Fatalf("payload = %#v", h.notifier.last)
 	}
 }

@@ -13,7 +13,6 @@ import (
 	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/services/captcha_validation/validators"
 	"github.com/imcrazytwkr/formdrain/services/captcha_validation/validators/common"
-	"github.com/imcrazytwkr/formdrain/utils/maputil"
 	"github.com/imcrazytwkr/formdrain/utils/utf8util"
 )
 
@@ -29,11 +28,10 @@ func NewRecaptchaValidator(secret string, client *http.Client) validators.Captch
 	}
 }
 
-func (v *recaptchaValidator) Validate(ctx context.Context, form map[string]any, hostname string, userIP netip.Addr) error {
+func (v *recaptchaValidator) Validate(ctx context.Context, responseToken string, hostname string, userIP netip.Addr) error {
 	log := common.GetLoggerForProvider(ctx, providerRecaptcha, common.ApiFormatHttp)
 
-	responseToken, ok := maputil.GetString(form, recaptchaKey)
-	if !ok {
+	if len(responseToken) < 1 {
 		return ErrNoRecaptchaToken
 	}
 

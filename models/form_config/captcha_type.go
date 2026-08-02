@@ -41,6 +41,18 @@ func (c CaptchaType) String() string {
 	return toString[c]
 }
 
+// DefaultTokenField is the form key used when FormConfig.CaptchaField is unset.
+func (c CaptchaType) DefaultTokenField() string {
+	switch c {
+	case CaptchaTypeHcaptcha:
+		return "h-captcha"
+	case CaptchaTypeRecaptcha:
+		return "g-recaptcha"
+	default:
+		return ""
+	}
+}
+
 func (c CaptchaType) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.String())
 }

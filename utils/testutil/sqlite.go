@@ -5,12 +5,13 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"testing"
 
 	_ "modernc.org/sqlite"
 )
 
-// OpenSqlite returns a temporary SQLite DB with migrations/001_init.sql applied.
+// OpenSqlite returns a temporary SQLite DB with all migrations/*.sql applied in name order.
 func OpenSqlite(t *testing.T) *sql.DB {
 	t.Helper()
 
@@ -19,10 +20,22 @@ func OpenSqlite(t *testing.T) *sql.DB {
 		t.Fatal("runtime.Caller failed")
 	}
 
-	migrationPath := filepath.Join(filepath.Dir(thisFile), "..", "..", "migrations", "001_init.sql")
-	migrationSQL, err := os.ReadFile(migrationPath)
+	migrationsDir := filepath.Join(filepath.Dir(thisFile), "..", "..", "migrations")
+	entries, err := os.ReadDir(migrationsDir)
 	if err != nil {
-		t.Fatalf("read migration: %v", err)
+		t.Fatalf("read migrations: %v", err)
+	}
+
+	var names []string
+	for _, e := range entries {
+		if e.IsDir() || filepath.Ext(e.Name()) != ".sql" {
+			continue
+		}
+		names = append(names, e.Name())
+	}
+	sort.Strings(names)
+	if len(names) < 1 {
+		t.Fatal("no migration SQL files found")
 	}
 
 	dbPath := filepath.Join(t.TempDir(), "test.db")
@@ -31,10 +44,17 @@ func OpenSqlite(t *testing.T) *sql.DB {
 		t.Fatalf("open sqlite: %v", err)
 	}
 
-	_, err = db.Exec(string(migrationSQL))
-	if err != nil {
-		_ = db.Close()
-		t.Fatalf("apply migration: %v", err)
+	for _, name := range names {
+		migrationSQL, err := os.ReadFile(filepath.Join(migrationsDir, name))
+		if err != nil {
+			_ = db.Close()
+			t.Fatalf("read migration %s: %v", name, err)
+		}
+		_, err = db.Exec(string(migrationSQL))
+		if err != nil {
+			_ = db.Close()
+			t.Fatalf("apply migration %s: %v", name, err)
+		}
 	}
 
 	t.Cleanup(func() {

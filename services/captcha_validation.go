@@ -8,5 +8,5 @@ import (
 )
 
 type CaptchaValidationService interface {
-	Validate(ctx context.Context, captchaType fc.CaptchaType, form map[string]any, hostname string, userIP netip.Addr) error
+	Validate(ctx context.Context, captchaType fc.CaptchaType, responseToken string, hostname string, userIP netip.Addr) error
 }

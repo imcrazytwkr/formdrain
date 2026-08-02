@@ -27,7 +27,7 @@ func TestValidate_MissingToken(t *testing.T) {
 	t.Parallel()
 
 	v := recaptcha.NewRecaptchaValidator("secret", &http.Client{})
-	err := v.Validate(context.Background(), map[string]any{}, "example.com", netip.Addr{})
+	err := v.Validate(context.Background(), "", "example.com", netip.Addr{})
 	if !errors.Is(err, recaptcha.ErrNoRecaptchaToken) {
 		t.Fatalf("err = %v", err)
 	}
@@ -59,7 +59,7 @@ func TestValidate_Success(t *testing.T) {
 	}
 
 	v := recaptcha.NewRecaptchaValidator("sec", client)
-	err := v.Validate(context.Background(), map[string]any{"g-recaptcha": "tok"}, "example.com", netip.MustParseAddr("1.2.3.4"))
+	err := v.Validate(context.Background(), "tok", "example.com", netip.MustParseAddr("1.2.3.4"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestValidate_SuccessWithBOM(t *testing.T) {
 	}
 
 	v := recaptcha.NewRecaptchaValidator("sec", client)
-	if err := v.Validate(context.Background(), map[string]any{"g-recaptcha": "tok"}, "example.com", netip.Addr{}); err != nil {
+	if err := v.Validate(context.Background(), "tok", "example.com", netip.Addr{}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -94,7 +94,7 @@ func TestValidate_NotPassed(t *testing.T) {
 	}
 
 	v := recaptcha.NewRecaptchaValidator("sec", client)
-	err := v.Validate(context.Background(), map[string]any{"g-recaptcha": "tok"}, "example.com", netip.Addr{})
+	err := v.Validate(context.Background(), "tok", "example.com", netip.Addr{})
 	if !errors.Is(err, constants.ErrCaptchaNotPassed) {
 		t.Fatalf("err = %v", err)
 	}
@@ -110,7 +110,7 @@ func TestValidate_HostnameMismatch(t *testing.T) {
 	}
 
 	v := recaptcha.NewRecaptchaValidator("sec", client)
-	err := v.Validate(context.Background(), map[string]any{"g-recaptcha": "tok"}, "example.com", netip.Addr{})
+	err := v.Validate(context.Background(), "tok", "example.com", netip.Addr{})
 	if !errors.Is(err, constants.ErrCaptchaNotPassed) {
 		t.Fatalf("err = %v", err)
 	}
@@ -126,7 +126,7 @@ func TestValidate_EmptyHostnameAllowed(t *testing.T) {
 	}
 
 	v := recaptcha.NewRecaptchaValidator("sec", client)
-	if err := v.Validate(context.Background(), map[string]any{"g-recaptcha": "tok"}, "example.com", netip.Addr{}); err != nil {
+	if err := v.Validate(context.Background(), "tok", "example.com", netip.Addr{}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -141,7 +141,7 @@ func TestValidate_NonOKStatus(t *testing.T) {
 	}
 
 	v := recaptcha.NewRecaptchaValidator("sec", client)
-	err := v.Validate(context.Background(), map[string]any{"g-recaptcha": "tok"}, "example.com", netip.Addr{})
+	err := v.Validate(context.Background(), "tok", "example.com", netip.Addr{})
 	if err == nil || !strings.Contains(err.Error(), "502") {
 		t.Fatalf("err = %v", err)
 	}
@@ -157,7 +157,7 @@ func TestValidate_MalformedJSON(t *testing.T) {
 	}
 
 	v := recaptcha.NewRecaptchaValidator("sec", client)
-	err := v.Validate(context.Background(), map[string]any{"g-recaptcha": "tok"}, "example.com", netip.Addr{})
+	err := v.Validate(context.Background(), "tok", "example.com", netip.Addr{})
 	if err == nil || !strings.Contains(err.Error(), "malformed body") {
 		t.Fatalf("err = %v", err)
 	}

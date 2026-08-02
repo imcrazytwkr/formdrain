@@ -45,6 +45,9 @@ func TestGetFormConfigById(t *testing.T) {
 	if got.CaptchaType != form_config.CaptchaTypeHcaptcha {
 		t.Fatalf("captcha: got %v", got.CaptchaType)
 	}
+	if got.CaptchaField != "" {
+		t.Fatalf("captcha_field: %q", got.CaptchaField)
+	}
 	if got.RedirectTo != "https://example.com/thanks" {
 		t.Fatalf("redirect: %q", got.RedirectTo)
 	}
@@ -123,5 +126,31 @@ func TestGetFormConfigById_CorruptNotifiers(t *testing.T) {
 	_, err = repo.GetFormConfigById(ctx, 22)
 	if err == nil {
 		t.Fatal("expected notifiers unmarshal error")
+	}
+}
+
+func TestGetFormConfigById_CaptchaField(t *testing.T) {
+	db := testutil.OpenSqlite(t)
+	ctx := context.Background()
+
+	_, err := db.Exec(`
+		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
+		INSERT INTO forms (id, site_id, captcha_type, captcha_field, field_schema, schema_version, notifiers)
+		VALUES (30, 1, 'hcaptcha', 'cf-turnstile-response', '{"version":1,"fields":[]}', 1, '{}');
+	`)
+	if err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	repo := fcr.NewSqliteFormConfigRepository(db)
+	got, err := repo.GetFormConfigById(ctx, 30)
+	if err != nil {
+		t.Fatalf("GetFormConfigById: %v", err)
+	}
+	if got.CaptchaField != "cf-turnstile-response" {
+		t.Fatalf("captcha_field = %q", got.CaptchaField)
+	}
+	if got.CaptchaTokenField() != "cf-turnstile-response" {
+		t.Fatalf("CaptchaTokenField = %q", got.CaptchaTokenField())
 	}
 }

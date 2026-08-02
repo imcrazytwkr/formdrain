@@ -18,7 +18,7 @@ func TestValidate_UnknownType(t *testing.T) {
 	t.Parallel()
 
 	svc := NewHttpCaptchaValidationService(&http.Client{}, &zerolog.Logger{})
-	err := svc.Validate(context.Background(), fc.CaptchaTypeUndefined, map[string]any{}, "example.com", netip.Addr{})
+	err := svc.Validate(context.Background(), fc.CaptchaTypeUndefined, "", "example.com", netip.Addr{})
 	if err == nil || !strings.Contains(err.Error(), "catcha type") {
 		t.Fatalf("err = %v", err)
 	}
@@ -41,7 +41,7 @@ func TestValidate_HcaptchaHappyPath(t *testing.T) {
 	err := svc.Validate(
 		context.Background(),
 		fc.CaptchaTypeHcaptcha,
-		map[string]any{"h-captcha": "tok"},
+		"tok",
 		"example.com",
 		netip.MustParseAddr("1.2.3.4"),
 	)
@@ -67,7 +67,7 @@ func TestValidate_HcaptchaNotPassed(t *testing.T) {
 	err := svc.Validate(
 		context.Background(),
 		fc.CaptchaTypeHcaptcha,
-		map[string]any{"h-captcha": "tok"},
+		"tok",
 		"example.com",
 		netip.Addr{},
 	)

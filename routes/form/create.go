@@ -10,6 +10,7 @@ import (
 	"github.com/imcrazytwkr/formdrain/utils/bodyparser"
 	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 	"github.com/imcrazytwkr/formdrain/utils/logutil"
+	"github.com/imcrazytwkr/formdrain/utils/maputil"
 	"github.com/imcrazytwkr/formdrain/validation"
 )
 
@@ -66,7 +67,9 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	err = r.captchaValidationService.Validate(ctx, formConfig.CaptchaType, formData, siteConfig.Hostname, clientIP)
+	captchaField := formConfig.CaptchaTokenField()
+	captchaToken, _ := maputil.GetString(formData, captchaField)
+	err = r.captchaValidationService.Validate(ctx, formConfig.CaptchaType, captchaToken, siteConfig.Hostname, clientIP)
 	switch err {
 	case nil:
 		// Captcha check passed
@@ -86,9 +89,7 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// Captcha tokens are not part of the field schema / stored payload.
-	delete(formData, "h-captcha")
-	delete(formData, "g-recaptcha")
-
+	delete(formData, captchaField)
 	payload, err := validation.ValidateFormPayload(formConfig.FieldSchema, formData)
 	if err != nil {
 		response := validation.NewValidationErrorResponse(http.StatusBadRequest, err)

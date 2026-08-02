@@ -22,6 +22,7 @@ const selectFormConfigById = `
 SELECT
 	site_id,
 	captcha_type,
+	captcha_field,
 	redirect_to,
 	field_schema,
 	schema_version,
@@ -36,6 +37,7 @@ func (r *sqliteFormConfigRepository) GetFormConfigById(ctx context.Context, id i
 	}
 
 	var config fc.FormConfig
+	var captchaField sql.NullString
 	var redirectTo sql.NullString
 	var rawCaptchaType string
 	var fieldSchema string
@@ -44,6 +46,7 @@ func (r *sqliteFormConfigRepository) GetFormConfigById(ctx context.Context, id i
 	err := r.db.QueryRowContext(ctx, selectFormConfigById, id).Scan(
 		&config.SiteId,
 		&rawCaptchaType,
+		&captchaField,
 		&redirectTo,
 		&fieldSchema,
 		&config.SchemaVersion,
@@ -65,6 +68,10 @@ func (r *sqliteFormConfigRepository) GetFormConfigById(ctx context.Context, id i
 
 	if config.CaptchaType == fc.CaptchaTypeUndefined {
 		return nil, ErrInvalidCaptchaType
+	}
+
+	if captchaField.Valid {
+		config.CaptchaField = captchaField.String
 	}
 
 	if redirectTo.Valid {

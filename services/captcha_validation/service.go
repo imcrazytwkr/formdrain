@@ -29,7 +29,7 @@ func NewHttpCaptchaValidationService(httpClient *http.Client, logger *zerolog.Lo
 func (s *httpCaptchaValidationService) Validate(
 	ctx context.Context,
 	captchaType fc.CaptchaType,
-	form map[string]any,
+	responseToken string,
 	hostname string,
 	userIP netip.Addr,
 ) error {
@@ -38,5 +38,5 @@ func (s *httpCaptchaValidationService) Validate(
 		return getErrNoCaptchaImpl(captchaType)
 	}
 
-	return validator.Validate(ctx, form, hostname, userIP)
+	return validator.Validate(ctx, responseToken, hostname, userIP)
 }

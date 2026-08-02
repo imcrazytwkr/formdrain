@@ -57,3 +57,34 @@ func TestCaptchaType_String(t *testing.T) {
 		t.Fatal(fc.CaptchaTypeRecaptcha.String())
 	}
 }
+
+func TestCaptchaType_DefaultTokenField(t *testing.T) {
+	t.Parallel()
+	if got := fc.CaptchaTypeHcaptcha.DefaultTokenField(); got != "h-captcha" {
+		t.Fatalf("hcaptcha default = %q", got)
+	}
+	if got := fc.CaptchaTypeRecaptcha.DefaultTokenField(); got != "g-recaptcha" {
+		t.Fatalf("recaptcha default = %q", got)
+	}
+	if got := fc.CaptchaTypeUndefined.DefaultTokenField(); got != "" {
+		t.Fatalf("undefined default = %q", got)
+	}
+}
+
+func TestFormConfig_CaptchaTokenField(t *testing.T) {
+	t.Parallel()
+
+	cfg := &fc.FormConfig{CaptchaType: fc.CaptchaTypeHcaptcha}
+	if got := cfg.CaptchaTokenField(); got != "h-captcha" {
+		t.Fatalf("default = %q", got)
+	}
+
+	cfg.CaptchaField = "cf-turnstile-response"
+	if got := cfg.CaptchaTokenField(); got != "cf-turnstile-response" {
+		t.Fatalf("custom = %q", got)
+	}
+
+	if got := (*fc.FormConfig)(nil).CaptchaTokenField(); got != "" {
+		t.Fatalf("nil config = %q", got)
+	}
+}
