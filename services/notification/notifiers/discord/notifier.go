@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/models/form_config/discord"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers/discord/models"
@@ -51,16 +52,20 @@ func (n *discordNotifier) send(snowflake string, token string, request *models.R
 		return err
 	}
 
+	req.Header.Set(constants.HeaderContentType, constants.ContentTypeJson)
+
 	response, err := n.client.Do(req)
 	if err != nil {
 		return err
 	}
+	defer response.Body.Close()
 
-	if response.StatusCode != http.StatusOK {
+	switch response.StatusCode {
+	case http.StatusNoContent, http.StatusOK:
+		return nil
+	default:
 		return fmt.Errorf("discord backend responded with %d", response.StatusCode)
 	}
-
-	return nil
 }
 
 func (n *discordNotifier) Send(config *discord.DiscordConfig, form map[string]any) error {

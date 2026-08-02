@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/models/common"
 	"github.com/imcrazytwkr/formdrain/models/form_config/discord"
 	dn "github.com/imcrazytwkr/formdrain/services/notification/notifiers/discord"
@@ -15,16 +16,17 @@ import (
 func TestSend_Success(t *testing.T) {
 	t.Parallel()
 
-	var sawURL string
+	var sawURL, sawCT string
 	client := &http.Client{
 		Transport: testutil.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
 			sawURL = r.URL.String()
+			sawCT = r.Header.Get(constants.HeaderContentType)
 			body, _ := io.ReadAll(r.Body)
 			if !strings.Contains(string(body), "hello a@b.c") {
 				t.Fatalf("body = %s", body)
 			}
 			return &http.Response{
-				StatusCode: http.StatusOK,
+				StatusCode: http.StatusNoContent,
 				Body:       io.NopCloser(strings.NewReader("")),
 				Header:     make(http.Header),
 			}, nil
@@ -47,6 +49,32 @@ func TestSend_Success(t *testing.T) {
 	}
 	if !strings.Contains(sawURL, "/webhooks/123/tok") {
 		t.Fatalf("url = %q", sawURL)
+	}
+	if sawCT != constants.ContentTypeJson {
+		t.Fatalf("Content-Type = %q", sawCT)
+	}
+}
+
+func TestSend_SuccessStatusOK(t *testing.T) {
+	t.Parallel()
+
+	client := &http.Client{
+		Transport: testutil.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader("")),
+				Header:     make(http.Header),
+			}, nil
+		}),
+	}
+
+	n := dn.NewDiscordNotifier("bot", "avatar", client)
+	err := n.Send(&discord.DiscordConfig{
+		Webhooks: []*discord.WebhookKey{{Snowflake: "1", Token: "t"}},
+		Template: mustTemplate(t, "hi"),
+	}, map[string]any{})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
