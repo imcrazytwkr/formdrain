@@ -1,4 +1,4 @@
-package sendinblue
+package brevo
 
 import (
 	"bytes"
@@ -6,33 +6,37 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/imcrazytwkr/formdrain/models/form_config/sendinblue"
+	"github.com/imcrazytwkr/formdrain/constants"
+	"github.com/imcrazytwkr/formdrain/models/form_config/brevo"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers"
-	"github.com/imcrazytwkr/formdrain/services/notification/notifiers/sendinblue/models"
+	"github.com/imcrazytwkr/formdrain/services/notification/notifiers/brevo/models"
 	"github.com/imcrazytwkr/formdrain/utils/httpclient"
 	"github.com/imcrazytwkr/formdrain/utils/httpclient/transports"
 )
 
-type sendinblueNotifier struct {
-	sender *sendinblue.EmailContact
+type brevoNotifier struct {
+	sender *brevo.EmailContact
+	apiKey string
 	client *http.Client
 }
 
-func NewSendinblueNotifier(
+func NewBrevoNotifier(
 	senderName string,
 	senderEmail string,
+	apiKey string,
 	client *http.Client,
-) notifiers.SendinblueNotifier {
-	return &sendinblueNotifier{
-		sender: &sendinblue.EmailContact{
+) notifiers.BrevoNotifier {
+	return &brevoNotifier{
+		sender: &brevo.EmailContact{
 			Name:    senderName,
 			Address: senderEmail,
 		},
+		apiKey: apiKey,
 		client: httpclient.WithTransport(client, transports.LimitedTransport(client.Transport, rateLimiter)),
 	}
 }
 
-func (n *sendinblueNotifier) send(request *models.Request) error {
+func (n *brevoNotifier) send(request *models.Request) error {
 	payload, err := json.Marshal(request)
 	if err != nil {
 		return err
@@ -43,19 +47,25 @@ func (n *sendinblueNotifier) send(request *models.Request) error {
 		return err
 	}
 
+	req.Header.Set(constants.HeaderAccept, constants.ContentTypeJson)
+	req.Header.Set(constants.HeaderContentType, constants.ContentTypeJson)
+	req.Header.Set(headerApiKey, n.apiKey)
+
 	response, err := n.client.Do(req)
 	if err != nil {
 		return err
 	}
+	defer response.Body.Close()
 
-	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("sendinblue backend responded with %d", response.StatusCode)
+	switch response.StatusCode {
+	case http.StatusCreated, http.StatusOK:
+		return nil
+	default:
+		return fmt.Errorf("brevo backend responded with %d", response.StatusCode)
 	}
-
-	return nil
 }
 
-func (n *sendinblueNotifier) Send(config *sendinblue.SendinblueConfig, form map[string]any) error {
+func (n *brevoNotifier) Send(config *brevo.BrevoConfig, form map[string]any) error {
 	if len(config.Recipients) < 1 {
 		return nil
 	}

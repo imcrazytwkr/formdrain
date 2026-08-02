@@ -23,7 +23,7 @@ func TestGetFormConfigById(t *testing.T) {
 			'https://example.com/thanks',
 			'{"version":1,"fields":[{"name":"email","type":"string","required":true}]}',
 			1,
-			'{"discord":null,"sendinblue":null}'
+			'{"discord":null,"brevo":null}'
 		);
 	`)
 	if err != nil {

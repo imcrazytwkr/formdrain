@@ -1,4 +1,4 @@
-package sendinblue_test
+package brevo_test
 
 import (
 	"io"
@@ -6,9 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/models/common"
-	"github.com/imcrazytwkr/formdrain/models/form_config/sendinblue"
-	sn "github.com/imcrazytwkr/formdrain/services/notification/notifiers/sendinblue"
+	"github.com/imcrazytwkr/formdrain/models/form_config/brevo"
+	bn "github.com/imcrazytwkr/formdrain/services/notification/notifiers/brevo"
 	"github.com/imcrazytwkr/formdrain/utils/testutil"
 )
 
@@ -16,15 +17,19 @@ func TestSend_Success(t *testing.T) {
 	t.Parallel()
 
 	var sawURL string
+	var sawAccept, sawCT, sawKey string
 	client := &http.Client{
 		Transport: testutil.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
 			sawURL = r.URL.String()
+			sawAccept = r.Header.Get(constants.HeaderAccept)
+			sawCT = r.Header.Get(constants.HeaderContentType)
+			sawKey = r.Header.Get("api-key")
 			body, _ := io.ReadAll(r.Body)
 			if !strings.Contains(string(body), "body a@b.c") {
 				t.Fatalf("body = %s", body)
 			}
 			return &http.Response{
-				StatusCode: http.StatusOK,
+				StatusCode: http.StatusCreated,
 				Body:       io.NopCloser(strings.NewReader("")),
 				Header:     make(http.Header),
 			}, nil
@@ -36,25 +41,34 @@ func TestSend_Success(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	n := sn.NewSendinblueNotifier("Sender", "from@example.com", client)
-	err = n.Send(&sendinblue.SendinblueConfig{
-		Recipients: []*sendinblue.EmailContact{{Name: "A", Address: "a@b.c"}},
+	n := bn.NewBrevoNotifier("Sender", "from@example.com", "test-api-key", client)
+	err = n.Send(&brevo.BrevoConfig{
+		Recipients: []*brevo.EmailContact{{Name: "A", Address: "a@b.c"}},
 		Subject:    "subj",
 		Template:   tmpl,
 	}, map[string]any{"email": "a@b.c"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(sawURL, "sendinblue.com") {
+	if !strings.Contains(sawURL, "api.brevo.com") {
 		t.Fatalf("url = %q", sawURL)
+	}
+	if sawAccept != constants.ContentTypeJson {
+		t.Fatalf("Accept = %q", sawAccept)
+	}
+	if sawCT != constants.ContentTypeJson {
+		t.Fatalf("Content-Type = %q", sawCT)
+	}
+	if sawKey != "test-api-key" {
+		t.Fatalf("api-key = %q", sawKey)
 	}
 }
 
 func TestSend_NoRecipients(t *testing.T) {
 	t.Parallel()
 
-	n := sn.NewSendinblueNotifier("Sender", "from@example.com", &http.Client{})
-	err := n.Send(&sendinblue.SendinblueConfig{
+	n := bn.NewBrevoNotifier("Sender", "from@example.com", "key", &http.Client{})
+	err := n.Send(&brevo.BrevoConfig{
 		Recipients: nil,
 		Template:   mustTemplate(t, "x"),
 	}, nil)
@@ -76,9 +90,9 @@ func TestSend_HTTPError(t *testing.T) {
 		}),
 	}
 
-	n := sn.NewSendinblueNotifier("Sender", "from@example.com", client)
-	err := n.Send(&sendinblue.SendinblueConfig{
-		Recipients: []*sendinblue.EmailContact{{Address: "a@b.c"}},
+	n := bn.NewBrevoNotifier("Sender", "from@example.com", "key", client)
+	err := n.Send(&brevo.BrevoConfig{
+		Recipients: []*brevo.EmailContact{{Address: "a@b.c"}},
 		Subject:    "s",
 		Template:   mustTemplate(t, "hi"),
 	}, map[string]any{})
