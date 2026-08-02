@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -41,13 +40,10 @@ func TestHandleResponse_JSON(t *testing.T) {
 }
 
 func TestHandleResponse_HTML(t *testing.T) {
-	err := httpserver.LoadTemplatesFromPath(filepath.Join("..", "..", "templates"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Parallel()
 
 	w := httptest.NewRecorder()
-	httpserver.HandleResponse(context.Background(), w, http.StatusOK, "form/success.html", nil)
+	httpserver.HandleResponse(context.Background(), w, http.StatusOK, "form/success", nil)
 	if !strings.Contains(w.Body.String(), "Form submitted") {
 		t.Fatalf("body = %q", w.Body.String())
 	}
@@ -66,13 +62,10 @@ func TestHandleResponse_JSONMarshalError(t *testing.T) {
 }
 
 func TestHandleResponse_MissingHTMLTemplate(t *testing.T) {
-	err := httpserver.LoadTemplatesFromPath(filepath.Join("..", "..", "templates"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Parallel()
 
 	w := httptest.NewRecorder()
-	httpserver.HandleResponse(context.Background(), w, http.StatusOK, "missing/nope.html", nil)
+	httpserver.HandleResponse(context.Background(), w, http.StatusOK, "missing/nope", nil)
 	if w.Body.String() != http.StatusText(http.StatusOK) {
 		t.Fatalf("body = %q", w.Body.String())
 	}

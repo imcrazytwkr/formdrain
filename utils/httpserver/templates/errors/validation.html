@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>{{message}}</title>
+    </head>
+    <body>
+        <h1>{{status}} {{message}}</h1>
+        <ul>
+            {{#errors}}
+            <li><strong>{{field}}</strong>: {{message}}</li>
+            {{/errors}}
+        </ul>
+    </body>
+</html>

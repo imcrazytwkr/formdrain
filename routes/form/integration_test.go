@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"net/netip"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -23,7 +22,6 @@ import (
 	frr "github.com/imcrazytwkr/formdrain/repositories/form_response"
 	scr "github.com/imcrazytwkr/formdrain/repositories/site_config"
 	"github.com/imcrazytwkr/formdrain/routes/form"
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 	"github.com/imcrazytwkr/formdrain/utils/testutil"
 )
 
@@ -64,11 +62,6 @@ type harness struct {
 
 func newHarness(t *testing.T) *harness {
 	t.Helper()
-
-	err := httpserver.LoadTemplatesFromPath(filepath.Join("..", "..", "templates"))
-	if err != nil {
-		t.Fatalf("templates: %v", err)
-	}
 
 	db := testutil.OpenSqlite(t)
 	captcha := &fakeCaptcha{}

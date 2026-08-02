@@ -45,13 +45,19 @@ func writeJSON(ctx context.Context, w http.ResponseWriter, status int, params an
 	}
 }
 
+type templateDataProvider interface {
+	TemplateData() map[string]any
+}
+
 func writeHTML(ctx context.Context, w http.ResponseWriter, status int, name string, params any) {
 	setResponseContentType(w, m.ContentTypeHTML)
 	w.WriteHeader(status)
 
 	log := zerolog.Ctx(ctx)
-	if templates == nil {
-		log.Error().Str("template", name).Msg("templates are not loaded")
+
+	tmpl, ok := templates[name]
+	if !ok || tmpl == nil {
+		log.Error().Str("template", name).Msg("template not found")
 		_, err := io.WriteString(w, http.StatusText(status))
 		if err != nil {
 			log.Error().Err(err).Msg("failed to write fallback plain-text response")
@@ -59,7 +65,24 @@ func writeHTML(ctx context.Context, w http.ResponseWriter, status int, name stri
 		return
 	}
 
-	err := templates.ExecuteTemplate(w, name, params)
+	var data map[string]any
+	switch p := params.(type) {
+	case templateDataProvider:
+		data = p.TemplateData()
+	case map[string]any:
+		data = p
+	default:
+		if params != nil {
+			log.Warn().
+				Str("template", name).
+				Type("params_type", params).
+				Msg("unsupported HTML template params; using empty data")
+		}
+
+		data = map[string]any{}
+	}
+
+	err := tmpl.FRender(w, data)
 	if err == nil {
 		return
 	}

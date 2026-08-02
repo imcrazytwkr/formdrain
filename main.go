@@ -16,7 +16,6 @@ import (
 	cvs "github.com/imcrazytwkr/formdrain/services/captcha_validation"
 	ns "github.com/imcrazytwkr/formdrain/services/notification"
 	"github.com/imcrazytwkr/formdrain/utils/httpclient"
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -36,11 +35,6 @@ func main() {
 	listenPort, err := getPort()
 	if err != nil {
 		log.Fatal().Err(err)
-	}
-
-	err = httpserver.LoadTemplates()
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to load templates")
 	}
 
 	router := chi.NewRouter()

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -70,17 +69,14 @@ func TestHandleError_ServerHidesMessage(t *testing.T) {
 }
 
 func TestHandleResponse_ValidationHTML(t *testing.T) {
-	err := httpserver.LoadTemplatesFromPath(filepath.Join("..", "..", "templates"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Parallel()
 
 	w := httptest.NewRecorder()
-	httpserver.HandleResponse(context.Background(), w, http.StatusBadRequest, "errors/validation.html", map[string]any{
-		"Status":  http.StatusBadRequest,
-		"Message": "form validation failed",
-		"Errors": map[string]string{
-			"email": "required form field is missing",
+	httpserver.HandleResponse(context.Background(), w, http.StatusBadRequest, "errors/validation", map[string]any{
+		"status":  http.StatusBadRequest,
+		"message": "form validation failed",
+		"errors": []map[string]string{
+			{"field": "email", "message": "required form field is missing"},
 		},
 	})
 

@@ -2,6 +2,7 @@ package validation
 
 import (
 	"errors"
+	"slices"
 
 	"github.com/imcrazytwkr/formdrain/utils/errorutil"
 )
@@ -51,4 +52,35 @@ func FieldErrorsMap(errs []error) map[string]string {
 	}
 
 	return out
+}
+
+// Returns Mustache-friendly data for the validation error HTML template.
+func (r *ValidationErrorResponse) TemplateData() map[string]any {
+	if r == nil {
+		return map[string]any{
+			"status":  0,
+			"message": "",
+			"errors":  []map[string]string{},
+		}
+	}
+
+	entries := make([]map[string]string, 0, len(r.Errors))
+	fields := make([]string, 0, len(r.Errors))
+	for field := range r.Errors {
+		fields = append(fields, field)
+	}
+
+	slices.Sort(fields)
+	for _, field := range fields {
+		entries = append(entries, map[string]string{
+			"field":   field,
+			"message": r.Errors[field],
+		})
+	}
+
+	return map[string]any{
+		"status":  r.Status,
+		"message": r.Message,
+		"errors":  entries,
+	}
 }

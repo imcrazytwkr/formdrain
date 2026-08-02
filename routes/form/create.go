@@ -92,7 +92,7 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 	payload, err := validation.ValidateFormPayload(formConfig.FieldSchema, formData)
 	if err != nil {
 		response := validation.NewValidationErrorResponse(http.StatusBadRequest, err)
-		httpserver.HandleResponse(ctx, w, http.StatusBadRequest, "errors/validation.html", response)
+		httpserver.HandleResponse(ctx, w, http.StatusBadRequest, "errors/validation", response)
 		return
 	}
 
@@ -116,12 +116,9 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 	}
 
 	if len(formConfig.RedirectTo) > 0 {
-		httpserver.HandleRedirect(ctx, w, http.StatusSeeOther, "form/redirect.html", formConfig.RedirectTo, nil)
+		httpserver.HandleRedirect(ctx, w, http.StatusSeeOther, "form/redirect", formConfig.RedirectTo, nil)
 		return
 	}
 
-	httpserver.HandleResponse(ctx, w, http.StatusOK, "form/success.html", map[string]any{
-		"formConfig": formConfig,
-		"siteConfig": siteConfig,
-	})
+	httpserver.HandleResponse(ctx, w, http.StatusOK, "form/success", map[string]any{})
 }
