@@ -1,4 +1,4 @@
-package httpserver_test
+package origin_test
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/imcrazytwkr/formdrain/constants"
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
+	"github.com/imcrazytwkr/formdrain/httpserver/origin"
 )
 
 func TestParseServerURL_Forwarded(t *testing.T) {
@@ -20,7 +20,7 @@ func TestParseServerURL_Forwarded(t *testing.T) {
 	r.Header.Set(constants.HeaderForwardedHost, "public.example.com")
 	r.Header.Set(constants.HeaderForwardedPort, "443")
 
-	u, err := httpserver.ParseServerURL(r)
+	u, err := origin.ParseServerURL(r)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,14 +28,14 @@ func TestParseServerURL_Forwarded(t *testing.T) {
 		t.Fatalf("got %#v", u)
 	}
 
-	host, err := httpserver.ParseServerHost(r)
+	host, err := origin.ParseServerHost(r)
 	if err != nil || host != "public.example.com" {
 		t.Fatalf("ParseServerHost = %q, %v", host, err)
 	}
 
 	r.Header.Set(constants.HeaderForwardedPort, "nope")
-	_, err = httpserver.ParseServerURL(r)
-	if !errors.Is(err, httpserver.ErrInvalidForwardedPort) {
+	_, err = origin.ParseServerURL(r)
+	if !errors.Is(err, origin.ErrInvalidForwardedPort) {
 		t.Fatalf("err = %v, want ErrInvalidForwardedPort", err)
 	}
 }

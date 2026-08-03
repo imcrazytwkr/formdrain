@@ -1,4 +1,4 @@
-package httpserver_test
+package clientip_test
 
 import (
 	"net/http"
@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/imcrazytwkr/formdrain/constants"
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
+	"github.com/imcrazytwkr/formdrain/httpserver/clientip"
 )
 
 func TestClientIP(t *testing.T) {
@@ -66,10 +66,10 @@ func TestClientIP(t *testing.T) {
 			want := netip.MustParseAddr(tt.want)
 			wantRemote := netip.MustParseAddr(tt.wantRemote)
 
-			if got := httpserver.ClientIP(r); got != want {
+			if got := clientip.ClientIP(r); got != want {
 				t.Fatalf("ClientIP = %v, want %v", got, want)
 			}
-			if got := httpserver.RemoteIP(r); got != wantRemote {
+			if got := clientip.RemoteIP(r); got != wantRemote {
 				t.Fatalf("RemoteIP = %v, want %v", got, wantRemote)
 			}
 		})
@@ -81,7 +81,7 @@ func TestRemoteIP_Malformed(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	r.RemoteAddr = "not-an-ip"
-	if got := httpserver.RemoteIP(r); got.IsValid() {
+	if got := clientip.RemoteIP(r); got.IsValid() {
 		t.Fatalf("got %v", got)
 	}
 }

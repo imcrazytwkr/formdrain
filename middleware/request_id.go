@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/imcrazytwkr/formdrain/constants"
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
+	"github.com/imcrazytwkr/formdrain/httpserver/clientip"
 	"github.com/rs/zerolog"
 )
 
@@ -15,7 +15,7 @@ func RequestId() func(http.Handler) http.Handler {
 			requestId := ""
 
 			// @NOTE: if this condition holds, we are running behind a trusted proxy
-			if httpserver.ClientIP(r) != httpserver.RemoteIP(r) {
+			if clientip.ClientIP(r) != clientip.RemoteIP(r) {
 				requestId = r.Header.Get(constants.HeaderRequestID)
 			}
 

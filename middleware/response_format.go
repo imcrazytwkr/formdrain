@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/imcrazytwkr/formdrain/constants"
+	"github.com/imcrazytwkr/formdrain/httpserver/contenttype"
 	m "github.com/imcrazytwkr/formdrain/models/http"
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 )
 
 func ResponseFormatParser(allowed ...m.ContentType) func(http.Handler) http.Handler {
@@ -18,7 +18,7 @@ func ResponseFormatParser(allowed ...m.ContentType) func(http.Handler) http.Hand
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			format := httpserver.Negotiate(r, offers)
+			format := contenttype.Negotiate(r, offers)
 			if format != m.ContentTypeUndefined {
 				w.Header().Set(constants.HeaderContentType, format.String())
 			}

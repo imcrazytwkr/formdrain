@@ -1,4 +1,4 @@
-package httpserver_test
+package origin_test
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/imcrazytwkr/formdrain/constants"
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
+	"github.com/imcrazytwkr/formdrain/httpserver/origin"
 )
 
 func TestParseOriginHost(t *testing.T) {
@@ -46,7 +46,7 @@ func TestParseOriginHost(t *testing.T) {
 			origin:   "https://forms.example.com",
 			referer:  "https://evil.example.com/x",
 			wantHost: "",
-			wantErr:  httpserver.ErrOriginMismatch,
+			wantErr:  origin.ErrOriginMismatch,
 		},
 		{
 			name:       "invalid referer",
@@ -84,7 +84,7 @@ func TestParseOriginHost(t *testing.T) {
 				r.Header.Set(constants.HeaderReferer, tt.referer)
 			}
 
-			got, err := httpserver.ParseOriginHost(r)
+			got, err := origin.ParseOriginHost(r)
 			if tt.wantErr != nil {
 				if !errors.Is(err, tt.wantErr) {
 					t.Fatalf("err = %v, want %v", err, tt.wantErr)

@@ -6,9 +6,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/constants"
+	"github.com/imcrazytwkr/formdrain/httpserver"
+	"github.com/imcrazytwkr/formdrain/httpserver/clientip"
+	"github.com/imcrazytwkr/formdrain/httpserver/contenttype"
 	"github.com/imcrazytwkr/formdrain/models/form_response"
 	"github.com/imcrazytwkr/formdrain/utils/bodyparser"
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 	"github.com/imcrazytwkr/formdrain/utils/logutil"
 	"github.com/imcrazytwkr/formdrain/utils/maputil"
 	"github.com/imcrazytwkr/formdrain/validation"
@@ -18,7 +20,7 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 	log := getLoggerForAction(req.Context(), actionSend)
 	ctx := log.WithContext(req.Context())
 
-	contentType := httpserver.GetContentType(req)
+	contentType := contenttype.GetContentType(req)
 	parser, ok := bodyparser.ParsersNew[contentType]
 	if !ok {
 		httpserver.HandleError(ctx, w, http.StatusUnsupportedMediaType, getErrUnsupportedFormType(contentType))
@@ -60,7 +62,7 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	clientIP := httpserver.ClientIP(req)
+	clientIP := clientip.ClientIP(req)
 	if !clientIP.IsValid() {
 		log.Error().Msg("could not parse client IP")
 		httpserver.HandleStatus(ctx, w, http.StatusInternalServerError)

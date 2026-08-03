@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/imcrazytwkr/formdrain/constants"
+	"github.com/imcrazytwkr/formdrain/httpserver"
 	m "github.com/imcrazytwkr/formdrain/models/http"
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 )
 
 func TestHandleResponse_String(t *testing.T) {

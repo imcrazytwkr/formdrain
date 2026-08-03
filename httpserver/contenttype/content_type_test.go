@@ -1,4 +1,4 @@
-package httpserver_test
+package contenttype_test
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/imcrazytwkr/formdrain/constants"
+	"github.com/imcrazytwkr/formdrain/httpserver/contenttype"
 	m "github.com/imcrazytwkr/formdrain/models/http"
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 )
 
 func TestRequestContentType(t *testing.T) {
@@ -16,7 +16,7 @@ func TestRequestContentType(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodPost, "/", nil)
 	r.Header.Set(constants.HeaderContentType, "application/json; charset=utf-8")
-	if got := httpserver.RequestContentType(r); got != "application/json" {
+	if got := contenttype.RequestContentType(r); got != "application/json" {
 		t.Fatalf("RequestContentType = %q", got)
 	}
 }
@@ -25,13 +25,13 @@ func TestGetContentType(t *testing.T) {
 	t.Parallel()
 
 	r := httptest.NewRequest(http.MethodPost, "/", nil)
-	if got := httpserver.GetContentType(r); got != m.ContentTypeUndefined {
+	if got := contenttype.GetContentType(r); got != m.ContentTypeUndefined {
 		t.Fatalf("GetContentType without ctx = %v", got)
 	}
 
-	ctx := httpserver.WithContentType(context.Background(), m.ContentTypeJSON)
+	ctx := contenttype.WithContentType(context.Background(), m.ContentTypeJSON)
 	r = r.WithContext(ctx)
-	if got := httpserver.GetContentType(r); got != m.ContentTypeJSON {
+	if got := contenttype.GetContentType(r); got != m.ContentTypeJSON {
 		t.Fatalf("GetContentType = %v", got)
 	}
 }

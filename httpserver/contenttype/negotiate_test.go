@@ -1,4 +1,4 @@
-package httpserver_test
+package contenttype_test
 
 import (
 	"net/http"
@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/imcrazytwkr/formdrain/constants"
+	"github.com/imcrazytwkr/formdrain/httpserver/contenttype"
 	m "github.com/imcrazytwkr/formdrain/models/http"
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 )
 
 func TestNegotiate(t *testing.T) {
@@ -35,7 +35,7 @@ func TestNegotiate(t *testing.T) {
 			if tt.accept != "" {
 				r.Header.Set(constants.HeaderAccept, tt.accept)
 			}
-			if got := httpserver.Negotiate(r, offers); got != tt.want {
+			if got := contenttype.Negotiate(r, offers); got != tt.want {
 				t.Fatalf("got %v, want %v", got, tt.want)
 			}
 		})

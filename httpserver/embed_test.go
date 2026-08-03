@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
+	"github.com/imcrazytwkr/formdrain/httpserver"
 )
 
 func TestEmbeddedTemplatesRender(t *testing.T) {

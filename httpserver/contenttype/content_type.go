@@ -1,4 +1,4 @@
-package httpserver
+package contenttype
 
 import (
 	"mime"
@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/imcrazytwkr/formdrain/constants"
-	m "github.com/imcrazytwkr/formdrain/models/http"
 	"github.com/imcrazytwkr/formdrain/utils/stringutil"
 )
 
@@ -20,14 +19,4 @@ func RequestContentType(r *http.Request) string {
 	}
 
 	return strings.TrimSpace(stringutil.TakeUntilByte(header, ';'))
-}
-
-// GetContentType returns the parsed body content type stored on the request context.
-func GetContentType(r *http.Request) m.ContentType {
-	raw, ok := r.Context().Value(contentTypeCtxKey{}).(m.ContentType)
-	if !ok {
-		return m.ContentTypeUndefined
-	}
-
-	return raw
 }

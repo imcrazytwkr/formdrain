@@ -1,7 +1,6 @@
-package httpserver
+package clientip
 
 import (
-	"net"
 	"net/http"
 	"net/netip"
 	"strings"
@@ -9,21 +8,6 @@ import (
 	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/utils/stringutil"
 )
-
-// RemoteIP returns the direct peer IP from RemoteAddr.
-func RemoteIP(r *http.Request) netip.Addr {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		host = r.RemoteAddr
-	}
-
-	addr, err := netip.ParseAddr(host)
-	if err != nil {
-		return netip.Addr{}
-	}
-
-	return addr
-}
 
 // ClientIP returns the client IP, honoring X-Forwarded-For / X-Real-IP only when
 // the direct peer is a trusted proxy (loopback, private, or link-local).

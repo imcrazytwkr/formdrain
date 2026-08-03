@@ -5,8 +5,9 @@ import (
 	"net/http"
 
 	"github.com/imcrazytwkr/formdrain/constants"
+	"github.com/imcrazytwkr/formdrain/httpserver"
+	"github.com/imcrazytwkr/formdrain/httpserver/contenttype"
 	m "github.com/imcrazytwkr/formdrain/models/http"
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 )
 
 func ContentTypeParser() func(http.Handler) http.Handler {
@@ -14,7 +15,7 @@ func ContentTypeParser() func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPost, http.MethodPut, http.MethodPatch:
-				contentType := m.ParseFormContentType(httpserver.RequestContentType(r))
+				contentType := m.ParseFormContentType(contenttype.RequestContentType(r))
 				if contentType == m.ContentTypeUndefined {
 					httpserver.HandleError(
 						r.Context(),
@@ -25,7 +26,7 @@ func ContentTypeParser() func(http.Handler) http.Handler {
 					return
 				}
 
-				r = r.WithContext(httpserver.WithContentType(r.Context(), contentType))
+				r = r.WithContext(contenttype.WithContentType(r.Context(), contentType))
 
 				// Guess response format if Accept did not set Content-Type.
 				if len(w.Header().Get(constants.HeaderContentType)) < 1 {

@@ -1,13 +1,14 @@
-package httpserver
+package origin
 
 import (
 	"errors"
-	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
 
 	"github.com/imcrazytwkr/formdrain/constants"
+	"github.com/imcrazytwkr/formdrain/httpserver/clientip"
 )
 
 var ErrInvalidForwardedPort = errors.New(constants.HeaderForwardedFor + " header is invalid")
@@ -32,7 +33,7 @@ func ParseServerURL(r *http.Request) (*url.URL, error) {
 	result.Scheme = r.URL.Scheme
 
 	// @NOTE: if this condition holds, we are running behind a trusted proxy
-	if ClientIP(r) != RemoteIP(r) {
+	if clientip.ClientIP(r) != clientip.RemoteIP(r) {
 		forwardedUrl, err := parseForwardedHost(r)
 		if err != nil {
 			// Returning error here because these headers take prevalence
@@ -84,7 +85,7 @@ func parseForwardedHost(r *http.Request) (*url.URL, error) {
 		result.Host = headerHost
 		result.Scheme = "https"
 	default:
-		result.Host = fmt.Sprintf("%s:%d", headerHost, port)
+		result.Host = net.JoinHostPort(headerHost, strconv.Itoa(port))
 	}
 
 	return result, nil

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/imcrazytwkr/formdrain/constants"
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
+	"github.com/imcrazytwkr/formdrain/httpserver"
 	"github.com/rs/zerolog"
 )
 

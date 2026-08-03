@@ -4,7 +4,8 @@ import (
 	"net/http"
 
 	"github.com/imcrazytwkr/formdrain/constants"
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
+	"github.com/imcrazytwkr/formdrain/httpserver"
+	"github.com/imcrazytwkr/formdrain/httpserver/origin"
 	"github.com/rs/zerolog"
 )
 
@@ -12,7 +13,7 @@ func (r *formRouter) CheckCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		log := zerolog.Ctx(req.Context())
 
-		originHost, err := httpserver.ParseOriginHost(req)
+		originHost, err := origin.ParseOriginHost(req)
 		if len(originHost) < 1 {
 			if err != nil {
 				httpserver.HandleError(req.Context(), w, http.StatusForbidden, err)

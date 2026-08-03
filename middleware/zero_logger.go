@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
+	"github.com/imcrazytwkr/formdrain/httpserver/clientip"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -53,7 +53,7 @@ func LoggerWithConfig(logger *zerolog.Logger, skipPaths []string) func(http.Hand
 			}
 
 			logEvent.
-				Str("client_ip", httpserver.ClientIP(r).String()).
+				Str("client_ip", clientip.ClientIP(r).String()).
 				Str("method", r.Method).
 				Int("status_code", statusCode).
 				Int("body_size", ww.bytes).

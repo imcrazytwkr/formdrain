@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/imcrazytwkr/formdrain/constants"
+	"github.com/imcrazytwkr/formdrain/httpserver/contenttype"
 	"github.com/imcrazytwkr/formdrain/middleware"
 	m "github.com/imcrazytwkr/formdrain/models/http"
-	"github.com/imcrazytwkr/formdrain/utils/httpserver"
 )
 
 func TestContentTypeParser_StoresAndGuesses(t *testing.T) {
@@ -17,7 +17,7 @@ func TestContentTypeParser_StoresAndGuesses(t *testing.T) {
 	var stored m.ContentType
 	var respCT string
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		stored = httpserver.GetContentType(r)
+		stored = contenttype.GetContentType(r)
 		respCT = w.Header().Get(constants.HeaderContentType)
 		w.WriteHeader(http.StatusNoContent)
 	})
