@@ -1,6 +1,7 @@
 package form
 
 import (
+	"errors"
 	"io"
 	"net/http"
 
@@ -72,14 +73,12 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 	captchaField := formConfig.CaptchaTokenField()
 	captchaToken, _ := maputil.GetString(formData, captchaField)
 	err = r.captchaValidationService.Validate(ctx, formConfig.CaptchaType, captchaToken, siteConfig.Hostname, clientIP)
-	switch err {
-	case nil:
-		// Captcha check passed
-		break
-	case constants.ErrCaptchaNotPassed:
-		httpserver.HandleError(ctx, w, http.StatusBadRequest, err)
-		return
-	default:
+	if err != nil {
+		if errors.Is(err, constants.ErrCaptchaNotPassed) {
+			httpserver.HandleError(ctx, w, http.StatusBadRequest, err)
+			return
+		}
+
 		log.Err(err).
 			Str("captcha_provider", formConfig.CaptchaType.String()).
 			Str("form_id", formId).

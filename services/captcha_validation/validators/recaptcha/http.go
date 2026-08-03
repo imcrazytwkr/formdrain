@@ -32,7 +32,7 @@ func (v *recaptchaValidator) Validate(ctx context.Context, responseToken string,
 	log := common.GetLoggerForProvider(ctx, providerRecaptcha, common.ApiFormatHttp)
 
 	if len(responseToken) < 1 {
-		return ErrNoRecaptchaToken
+		return constants.ErrCaptchaNotPassed
 	}
 
 	payload := url.Values{}
@@ -42,7 +42,7 @@ func (v *recaptchaValidator) Validate(ctx context.Context, responseToken string,
 		payload.Set("remoteip", userIP.String())
 	}
 
-	request, err := http.NewRequest(http.MethodPost, recaptchaUrl, strings.NewReader(payload.Encode()))
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, recaptchaUrl, strings.NewReader(payload.Encode()))
 	if err != nil {
 		return err
 	}
@@ -52,14 +52,13 @@ func (v *recaptchaValidator) Validate(ctx context.Context, responseToken string,
 	if err != nil {
 		return err
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		return fmt.Errorf("recaptcha backend responded with %d", response.StatusCode)
 	}
 
 	body, err := io.ReadAll(response.Body)
-	defer response.Body.Close()
-
 	if err != nil {
 		return fmt.Errorf("recaptcha backend responded with malformed body: %w", err)
 	}

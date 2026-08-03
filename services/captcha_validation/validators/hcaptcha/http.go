@@ -32,7 +32,7 @@ func (v *hcaptchaValidator) Validate(ctx context.Context, responseToken string, 
 	log := common.GetLoggerForProvider(ctx, providerHcaptcha, common.ApiFormatHttp)
 
 	if len(responseToken) < 1 {
-		return ErrNoHcaptchaToken
+		return constants.ErrCaptchaNotPassed
 	}
 
 	payload := url.Values{}
@@ -52,14 +52,13 @@ func (v *hcaptchaValidator) Validate(ctx context.Context, responseToken string, 
 	if err != nil {
 		return err
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		return fmt.Errorf("hcaptcha backend responded with %d", response.StatusCode)
 	}
 
 	body, err := io.ReadAll(response.Body)
-	defer response.Body.Close()
-
 	if err != nil {
 		return fmt.Errorf("hcaptcha backend responded with malformed body: %w", err)
 	}
