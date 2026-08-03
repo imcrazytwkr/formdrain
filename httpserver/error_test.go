@@ -1,7 +1,6 @@
 package httpserver_test
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -20,7 +19,7 @@ func TestHandleError_JSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	w.Header().Set(constants.HeaderContentType, m.ContentTypeJSON.String())
 
-	httpserver.HandleError(context.Background(), w, http.StatusBadRequest, errors.New("nope"))
+	httpserver.HandleError(t.Context(), w, http.StatusBadRequest, errors.New("nope"))
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d", w.Code)
@@ -39,7 +38,7 @@ func TestHandleError_HTMLFallbackWhenUnset(t *testing.T) {
 	t.Parallel()
 
 	w := httptest.NewRecorder()
-	httpserver.HandleStatus(context.Background(), w, http.StatusNotFound)
+	httpserver.HandleStatus(t.Context(), w, http.StatusNotFound)
 
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("status = %d", w.Code)
@@ -57,7 +56,7 @@ func TestHandleError_ServerHidesMessage(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	w.Header().Set(constants.HeaderContentType, m.ContentTypeJSON.String())
-	httpserver.HandleError(context.Background(), w, http.StatusInternalServerError, errors.New("secret"))
+	httpserver.HandleError(t.Context(), w, http.StatusInternalServerError, errors.New("secret"))
 
 	var body map[string]any
 	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
@@ -72,7 +71,7 @@ func TestHandleResponse_ValidationHTML(t *testing.T) {
 	t.Parallel()
 
 	w := httptest.NewRecorder()
-	httpserver.HandleResponse(context.Background(), w, http.StatusBadRequest, "errors/validation", map[string]any{
+	httpserver.HandleResponse(t.Context(), w, http.StatusBadRequest, "errors/validation", map[string]any{
 		"status":  http.StatusBadRequest,
 		"message": "form validation failed",
 		"errors": []map[string]string{

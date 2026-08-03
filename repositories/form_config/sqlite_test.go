@@ -1,7 +1,6 @@
 package form_config_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/imcrazytwkr/formdrain/models/form_config"
@@ -11,7 +10,7 @@ import (
 
 func TestGetFormConfigById(t *testing.T) {
 	db := testutil.OpenSqlite(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := db.Exec(`
 		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
@@ -71,7 +70,6 @@ func TestGetFormConfigById(t *testing.T) {
 
 func TestGetFormConfigById_CorruptFieldSchema(t *testing.T) {
 	db := testutil.OpenSqlite(t)
-	ctx := context.Background()
 
 	_, err := db.Exec(`
 		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
@@ -83,7 +81,7 @@ func TestGetFormConfigById_CorruptFieldSchema(t *testing.T) {
 	}
 
 	repo := fcr.NewSqliteFormConfigRepository(db)
-	_, err = repo.GetFormConfigById(ctx, 20)
+	_, err = repo.GetFormConfigById(t.Context(), 20)
 	if err == nil {
 		t.Fatal("expected unmarshal error")
 	}
@@ -91,7 +89,6 @@ func TestGetFormConfigById_CorruptFieldSchema(t *testing.T) {
 
 func TestGetFormConfigById_InvalidCaptchaType(t *testing.T) {
 	db := testutil.OpenSqlite(t)
-	ctx := context.Background()
 
 	_, err := db.Exec(`
 		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
@@ -103,7 +100,7 @@ func TestGetFormConfigById_InvalidCaptchaType(t *testing.T) {
 	}
 
 	repo := fcr.NewSqliteFormConfigRepository(db)
-	_, err = repo.GetFormConfigById(ctx, 21)
+	_, err = repo.GetFormConfigById(t.Context(), 21)
 	if err == nil {
 		t.Fatal("expected captcha type error")
 	}
@@ -111,7 +108,6 @@ func TestGetFormConfigById_InvalidCaptchaType(t *testing.T) {
 
 func TestGetFormConfigById_CorruptNotifiers(t *testing.T) {
 	db := testutil.OpenSqlite(t)
-	ctx := context.Background()
 
 	_, err := db.Exec(`
 		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
@@ -123,7 +119,7 @@ func TestGetFormConfigById_CorruptNotifiers(t *testing.T) {
 	}
 
 	repo := fcr.NewSqliteFormConfigRepository(db)
-	_, err = repo.GetFormConfigById(ctx, 22)
+	_, err = repo.GetFormConfigById(t.Context(), 22)
 	if err == nil {
 		t.Fatal("expected notifiers unmarshal error")
 	}
@@ -131,7 +127,6 @@ func TestGetFormConfigById_CorruptNotifiers(t *testing.T) {
 
 func TestGetFormConfigById_CaptchaField(t *testing.T) {
 	db := testutil.OpenSqlite(t)
-	ctx := context.Background()
 
 	_, err := db.Exec(`
 		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
@@ -143,7 +138,7 @@ func TestGetFormConfigById_CaptchaField(t *testing.T) {
 	}
 
 	repo := fcr.NewSqliteFormConfigRepository(db)
-	got, err := repo.GetFormConfigById(ctx, 30)
+	got, err := repo.GetFormConfigById(t.Context(), 30)
 	if err != nil {
 		t.Fatalf("GetFormConfigById: %v", err)
 	}

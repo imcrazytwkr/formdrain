@@ -1,7 +1,6 @@
 package httpserver_test
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -17,7 +16,7 @@ func TestHandleResponse_String(t *testing.T) {
 	t.Parallel()
 
 	w := httptest.NewRecorder()
-	httpserver.HandleResponse(context.Background(), w, http.StatusOK, "", "plain")
+	httpserver.HandleResponse(t.Context(), w, http.StatusOK, "", "plain")
 	if w.Body.String() != "plain" {
 		t.Fatalf("body = %q", w.Body.String())
 	}
@@ -28,7 +27,7 @@ func TestHandleResponse_JSON(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	w.Header().Set(constants.HeaderContentType, m.ContentTypeJSON.String())
-	httpserver.HandleResponse(context.Background(), w, http.StatusOK, "", map[string]any{"ok": true})
+	httpserver.HandleResponse(t.Context(), w, http.StatusOK, "", map[string]any{"ok": true})
 
 	var body map[string]any
 	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
@@ -43,7 +42,7 @@ func TestHandleResponse_HTML(t *testing.T) {
 	t.Parallel()
 
 	w := httptest.NewRecorder()
-	httpserver.HandleResponse(context.Background(), w, http.StatusOK, "form/success", nil)
+	httpserver.HandleResponse(t.Context(), w, http.StatusOK, "form/success", nil)
 	if !strings.Contains(w.Body.String(), "Form submitted") {
 		t.Fatalf("body = %q", w.Body.String())
 	}
@@ -52,7 +51,7 @@ func TestHandleResponse_HTML(t *testing.T) {
 func TestHandleResponse_JSONMarshalError(t *testing.T) {
 	w := httptest.NewRecorder()
 	w.Header().Set(constants.HeaderContentType, m.ContentTypeJSON.String())
-	httpserver.HandleResponse(context.Background(), w, http.StatusOK, "", make(chan int))
+	httpserver.HandleResponse(t.Context(), w, http.StatusOK, "", make(chan int))
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d", w.Code)
 	}
@@ -65,7 +64,7 @@ func TestHandleResponse_MissingHTMLTemplate(t *testing.T) {
 	t.Parallel()
 
 	w := httptest.NewRecorder()
-	httpserver.HandleResponse(context.Background(), w, http.StatusOK, "missing/nope", nil)
+	httpserver.HandleResponse(t.Context(), w, http.StatusOK, "missing/nope", nil)
 	if w.Body.String() != http.StatusText(http.StatusOK) {
 		t.Fatalf("body = %q", w.Body.String())
 	}
@@ -74,7 +73,7 @@ func TestHandleResponse_MissingHTMLTemplate(t *testing.T) {
 func TestHandleError_NonStandardStatus(t *testing.T) {
 	w := httptest.NewRecorder()
 	w.Header().Set(constants.HeaderContentType, m.ContentTypeJSON.String())
-	httpserver.HandleStatus(context.Background(), w, 599)
+	httpserver.HandleStatus(t.Context(), w, 599)
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d", w.Code)
 	}

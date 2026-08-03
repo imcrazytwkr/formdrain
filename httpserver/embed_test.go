@@ -1,7 +1,6 @@
 package httpserver_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -60,7 +59,7 @@ func TestEmbeddedTemplatesRender(t *testing.T) {
 			t.Parallel()
 
 			w := httptest.NewRecorder()
-			httpserver.HandleResponse(context.Background(), w, http.StatusOK, tc.template, tc.data)
+			httpserver.HandleResponse(t.Context(), w, http.StatusOK, tc.template, tc.data)
 			if !strings.Contains(w.Body.String(), tc.want) {
 				t.Fatalf("body = %q, want substring %q", w.Body.String(), tc.want)
 			}

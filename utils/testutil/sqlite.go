@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
+	"slices"
 	"testing"
 
 	_ "modernc.org/sqlite"
@@ -33,10 +33,12 @@ func OpenSqlite(t *testing.T) *sql.DB {
 		}
 		names = append(names, e.Name())
 	}
-	sort.Strings(names)
+
 	if len(names) < 1 {
 		t.Fatal("no migration SQL files found")
 	}
+
+	slices.Sort(names)
 
 	dbPath := filepath.Join(t.TempDir(), "test.db")
 	db, err := sql.Open("sqlite", dbPath)

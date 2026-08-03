@@ -1,7 +1,6 @@
 package httpserver_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -17,7 +16,7 @@ func TestHandleRedirect_JSONLocationOnly(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	w.Header().Set(constants.HeaderContentType, m.ContentTypeJSON.String())
-	httpserver.HandleRedirect(context.Background(), w, http.StatusSeeOther, "form/redirect", "https://example.com/ok", nil)
+	httpserver.HandleRedirect(t.Context(), w, http.StatusSeeOther, "form/redirect", "https://example.com/ok", nil)
 
 	if loc := w.Header().Get(constants.HeaderLocation); loc != "https://example.com/ok" {
 		t.Fatalf("location = %q", loc)
@@ -31,7 +30,7 @@ func TestHandleRedirect_HTMLBody(t *testing.T) {
 	t.Parallel()
 
 	w := httptest.NewRecorder()
-	httpserver.HandleRedirect(context.Background(), w, http.StatusSeeOther, "form/redirect", "https://example.com/ok", nil)
+	httpserver.HandleRedirect(t.Context(), w, http.StatusSeeOther, "form/redirect", "https://example.com/ok", nil)
 
 	if loc := w.Header().Get(constants.HeaderLocation); loc != "https://example.com/ok" {
 		t.Fatalf("location = %q", loc)

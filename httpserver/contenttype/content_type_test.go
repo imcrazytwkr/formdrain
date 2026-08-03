@@ -1,7 +1,6 @@
 package contenttype_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -29,7 +28,7 @@ func TestGetContentType(t *testing.T) {
 		t.Fatalf("GetContentType without ctx = %v", got)
 	}
 
-	ctx := contenttype.WithContentType(context.Background(), m.ContentTypeJSON)
+	ctx := contenttype.WithContentType(t.Context(), m.ContentTypeJSON)
 	r = r.WithContext(ctx)
 	if got := contenttype.GetContentType(r); got != m.ContentTypeJSON {
 		t.Fatalf("GetContentType = %v", got)

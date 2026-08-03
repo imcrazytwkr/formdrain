@@ -1,7 +1,6 @@
 package form_response_test
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -15,7 +14,6 @@ import (
 
 func TestSaveFormResponse(t *testing.T) {
 	db := testutil.OpenSqlite(t)
-	ctx := context.Background()
 
 	_, err := db.Exec(`
 		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
@@ -28,7 +26,7 @@ func TestSaveFormResponse(t *testing.T) {
 
 	repo := frr.NewSqliteFormResponseRepository(db)
 	ip := netip.MustParseAddr("203.0.113.10")
-	id, err := repo.SaveFormResponse(ctx, &form_response.FormResponse{
+	id, err := repo.SaveFormResponse(t.Context(), &form_response.FormResponse{
 		FormId:        10,
 		SchemaVersion: 3,
 		ClientIP:      ip,
@@ -73,7 +71,7 @@ func TestSaveFormResponse(t *testing.T) {
 func TestSaveFormResponse_Nil(t *testing.T) {
 	db := testutil.OpenSqlite(t)
 	repo := frr.NewSqliteFormResponseRepository(db)
-	_, err := repo.SaveFormResponse(context.Background(), nil)
+	_, err := repo.SaveFormResponse(t.Context(), nil)
 	if !errors.Is(err, frr.ErrEmptyFormResponse) {
 		t.Fatalf("err = %v", err)
 	}
@@ -81,7 +79,6 @@ func TestSaveFormResponse_Nil(t *testing.T) {
 
 func TestSaveFormResponse_NoClientIP(t *testing.T) {
 	db := testutil.OpenSqlite(t)
-	ctx := context.Background()
 
 	_, err := db.Exec(`
 		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
@@ -93,7 +90,7 @@ func TestSaveFormResponse_NoClientIP(t *testing.T) {
 	}
 
 	repo := frr.NewSqliteFormResponseRepository(db)
-	id, err := repo.SaveFormResponse(ctx, &form_response.FormResponse{
+	id, err := repo.SaveFormResponse(t.Context(), &form_response.FormResponse{
 		FormId:        10,
 		SchemaVersion: 1,
 		Payload:       map[string]any{},

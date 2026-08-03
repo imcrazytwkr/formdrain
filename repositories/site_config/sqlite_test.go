@@ -1,7 +1,6 @@
 package site_config_test
 
 import (
-	"context"
 	"testing"
 
 	scr "github.com/imcrazytwkr/formdrain/repositories/site_config"
@@ -10,7 +9,7 @@ import (
 
 func TestGetSiteConfigById(t *testing.T) {
 	db := testutil.OpenSqlite(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := db.Exec(`INSERT INTO sites (id, hostname) VALUES (7, 'forms.example.com')`)
 	if err != nil {

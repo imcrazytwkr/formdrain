@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/imcrazytwkr/formdrain/utils/httpclient/transports"
@@ -51,25 +52,29 @@ func TestLimitedTransport_CallsBase(t *testing.T) {
 func TestLimitedTransport_ContextCancel(t *testing.T) {
 	t.Parallel()
 
-	base := testutil.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
-		t.Fatal("base should not be called")
-		return nil, nil
+	synctest.Test(t, func(t *testing.T) {
+		base := testutil.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
+			t.Fatal("base should not be called")
+			return nil, nil
+		})
+
+		limiter := rate.NewLimiter(rate.Limit(1), 1)
+		if err := limiter.Wait(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+		rt := transports.LimitedTransport(base, limiter)
+
+		ctx, cancel := context.WithTimeout(t.Context(), time.Millisecond)
+		defer cancel()
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://example.com/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		_, err = rt.RoundTrip(req)
+		if err == nil {
+			t.Fatal("expected context error")
+		}
 	})
-
-	limiter := rate.NewLimiter(rate.Limit(1), 1)
-	_ = limiter.Wait(context.Background()) // consume burst
-	rt := transports.LimitedTransport(base, limiter)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://example.com/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = rt.RoundTrip(req)
-	if err == nil {
-		t.Fatal("expected context error")
-	}
 }
