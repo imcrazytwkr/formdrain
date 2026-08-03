@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/middleware"
@@ -73,10 +77,29 @@ func main() {
 		).Router,
 	)
 
-	addr := net.JoinHostPort(listenHost, listenPort)
-	err = http.ListenAndServe(addr, router)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	srv := &http.Server{
+		Addr:    net.JoinHostPort(listenHost, listenPort),
+		Handler: router,
+	}
+
+	go func() {
+		err := srv.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal().Err(err).Msg("server stopped")
+		}
+	}()
+
+	<-ctx.Done()
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), terminationGracePeriod)
+	defer cancel()
+
+	err = srv.Shutdown(shutdownCtx)
 	if err != nil {
-		log.Fatal().Err(err).Msg("server stopped")
+		log.Fatal().Err(err).Msg("server shutdown")
 	}
 }
 
