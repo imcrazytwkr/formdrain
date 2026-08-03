@@ -1,7 +1,11 @@
 package notifiers
 
-import "github.com/imcrazytwkr/formdrain/models/form_config/discord"
+import (
+	"context"
+
+	"github.com/imcrazytwkr/formdrain/models/form_config/discord"
+)
 
 type DiscordNotifier interface {
-	Send(config *discord.DiscordConfig, form map[string]any) error
+	Send(ctx context.Context, config *discord.DiscordConfig, form map[string]any) error
 }

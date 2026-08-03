@@ -39,7 +39,7 @@ func TestSend_Success(t *testing.T) {
 	}
 
 	n := dn.NewDiscordNotifier("bot", "https://avatar", client)
-	err = n.Send(&discord.DiscordConfig{
+	err = n.Send(t.Context(), &discord.DiscordConfig{
 		Webhooks: []*discord.WebhookKey{{Snowflake: "123", Token: "tok"}},
 		Title:    "t",
 		Template: tmpl,
@@ -69,7 +69,7 @@ func TestSend_SuccessStatusOK(t *testing.T) {
 	}
 
 	n := dn.NewDiscordNotifier("bot", "avatar", client)
-	err := n.Send(&discord.DiscordConfig{
+	err := n.Send(t.Context(), &discord.DiscordConfig{
 		Webhooks: []*discord.WebhookKey{{Snowflake: "1", Token: "t"}},
 		Template: mustTemplate(t, "hi"),
 	}, map[string]any{})
@@ -82,7 +82,7 @@ func TestSend_NoWebhooks(t *testing.T) {
 	t.Parallel()
 
 	n := dn.NewDiscordNotifier("bot", "avatar", &http.Client{})
-	err := n.Send(&discord.DiscordConfig{
+	err := n.Send(t.Context(), &discord.DiscordConfig{
 		Webhooks: nil,
 		Template: mustTemplate(t, "x"),
 	}, nil)
@@ -105,7 +105,7 @@ func TestSend_HTTPError(t *testing.T) {
 	}
 
 	n := dn.NewDiscordNotifier("bot", "avatar", client)
-	err := n.Send(&discord.DiscordConfig{
+	err := n.Send(t.Context(), &discord.DiscordConfig{
 		Webhooks: []*discord.WebhookKey{{Snowflake: "1", Token: "t"}},
 		Template: mustTemplate(t, "hi"),
 	}, map[string]any{})

@@ -2,6 +2,7 @@ package brevo
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -36,13 +37,13 @@ func NewBrevoNotifier(
 	}
 }
 
-func (n *brevoNotifier) send(request *models.Request) error {
+func (n *brevoNotifier) send(ctx context.Context, request *models.Request) error {
 	payload, err := json.Marshal(request)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, backendUrl, bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, backendUrl, bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}
@@ -65,7 +66,7 @@ func (n *brevoNotifier) send(request *models.Request) error {
 	}
 }
 
-func (n *brevoNotifier) Send(config *brevo.BrevoConfig, form map[string]any) error {
+func (n *brevoNotifier) Send(ctx context.Context, config *brevo.BrevoConfig, form map[string]any) error {
 	if len(config.Recipients) < 1 {
 		return nil
 	}
@@ -75,7 +76,7 @@ func (n *brevoNotifier) Send(config *brevo.BrevoConfig, form map[string]any) err
 		return err
 	}
 
-	return n.send(&models.Request{
+	return n.send(ctx, &models.Request{
 		Sender:     n.sender,
 		Recipients: config.Recipients,
 		Subject:    config.Subject,

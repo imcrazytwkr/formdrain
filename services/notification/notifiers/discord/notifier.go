@@ -2,6 +2,7 @@ package discord
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,13 +38,14 @@ func (n *discordNotifier) makeRequest(embed *models.Embed) *models.Request {
 	}
 }
 
-func (n *discordNotifier) send(snowflake string, token string, request *models.Request) error {
+func (n *discordNotifier) send(ctx context.Context, snowflake string, token string, request *models.Request) error {
 	payload, err := json.Marshal(request)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest(
+	req, err := http.NewRequestWithContext(
+		ctx,
 		http.MethodPost,
 		fmt.Sprintf("https://discord.com/api/webhooks/%s/%s", snowflake, token),
 		bytes.NewReader(payload),
@@ -68,7 +70,7 @@ func (n *discordNotifier) send(snowflake string, token string, request *models.R
 	}
 }
 
-func (n *discordNotifier) Send(config *discord.DiscordConfig, form map[string]any) error {
+func (n *discordNotifier) Send(ctx context.Context, config *discord.DiscordConfig, form map[string]any) error {
 	if len(config.Webhooks) < 1 {
 		return nil
 	}
@@ -88,7 +90,7 @@ func (n *discordNotifier) Send(config *discord.DiscordConfig, form map[string]an
 
 	var errs []error
 	for _, key := range config.Webhooks {
-		err := n.send(key.Snowflake, key.Token, request)
+		err := n.send(ctx, key.Snowflake, key.Token, request)
 		if err != nil {
 			errs = append(errs, err)
 		}

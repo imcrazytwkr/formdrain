@@ -42,7 +42,7 @@ func TestSend_Success(t *testing.T) {
 	}
 
 	n := bn.NewBrevoNotifier("Sender", "from@example.com", "test-api-key", client)
-	err = n.Send(&brevo.BrevoConfig{
+	err = n.Send(t.Context(), &brevo.BrevoConfig{
 		Recipients: []*brevo.EmailContact{{Name: "A", Address: "a@b.c"}},
 		Subject:    "subj",
 		Template:   tmpl,
@@ -68,7 +68,7 @@ func TestSend_NoRecipients(t *testing.T) {
 	t.Parallel()
 
 	n := bn.NewBrevoNotifier("Sender", "from@example.com", "key", &http.Client{})
-	err := n.Send(&brevo.BrevoConfig{
+	err := n.Send(t.Context(), &brevo.BrevoConfig{
 		Recipients: nil,
 		Template:   mustTemplate(t, "x"),
 	}, nil)
@@ -91,7 +91,7 @@ func TestSend_HTTPError(t *testing.T) {
 	}
 
 	n := bn.NewBrevoNotifier("Sender", "from@example.com", "key", client)
-	err := n.Send(&brevo.BrevoConfig{
+	err := n.Send(t.Context(), &brevo.BrevoConfig{
 		Recipients: []*brevo.EmailContact{{Address: "a@b.c"}},
 		Subject:    "s",
 		Template:   mustTemplate(t, "hi"),

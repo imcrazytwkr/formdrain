@@ -11,7 +11,9 @@ import (
 	"net/netip"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/constants"
@@ -42,15 +44,50 @@ func (f *fakeCaptcha) Validate(
 }
 
 type recordingNotifier struct {
+	mu    sync.Mutex
 	calls int
 	last  map[string]any
 	err   error
+	done  chan struct{}
 }
 
-func (n *recordingNotifier) Send(_ fc.NotifiersConfig, formData map[string]any) error {
+func newRecordingNotifier() *recordingNotifier {
+	return &recordingNotifier{done: make(chan struct{}, 8)}
+}
+
+func (n *recordingNotifier) Send(_ context.Context, _ fc.NotifiersConfig, formData map[string]any) error {
+	n.mu.Lock()
 	n.calls++
 	n.last = formData
-	return n.err
+	err := n.err
+	n.mu.Unlock()
+
+	select {
+	case n.done <- struct{}{}:
+	default:
+	}
+	return err
+}
+
+func (n *recordingNotifier) SendAsync(ctx context.Context, config fc.NotifiersConfig, formData map[string]any) {
+	go func() {
+		_ = n.Send(ctx, config, formData)
+	}()
+}
+
+func (n *recordingNotifier) waitCall(t *testing.T) {
+	t.Helper()
+	select {
+	case <-n.done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for notifier")
+	}
+}
+
+func (n *recordingNotifier) snapshot() (int, map[string]any) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return n.calls, n.last
 }
 
 type harness struct {
@@ -65,7 +102,7 @@ func newHarness(t *testing.T) *harness {
 
 	db := testutil.OpenSqlite(t)
 	captcha := &fakeCaptcha{}
-	notifier := &recordingNotifier{}
+	notifier := newRecordingNotifier()
 
 	router := chi.NewRouter()
 	router.Use(middleware.ResponseFormatParser(m.ContentTypeHTML, m.ContentTypeJSON))
@@ -184,14 +221,16 @@ func TestCreate_JSONHappyPath(t *testing.T) {
 	if h.captcha.calls != 1 {
 		t.Fatalf("captcha calls = %d", h.captcha.calls)
 	}
-	if h.notifier.calls != 1 {
-		t.Fatalf("notifier calls = %d", h.notifier.calls)
+	h.notifier.waitCall(t)
+	calls, last := h.notifier.snapshot()
+	if calls != 1 {
+		t.Fatalf("notifier calls = %d", calls)
 	}
-	if _, ok := h.notifier.last["h-captcha"]; ok {
-		t.Fatalf("captcha token leaked into payload: %#v", h.notifier.last)
+	if _, ok := last["h-captcha"]; ok {
+		t.Fatalf("captcha token leaked into payload: %#v", last)
 	}
-	if h.notifier.last["email"] != "a@b.c" {
-		t.Fatalf("payload = %#v", h.notifier.last)
+	if last["email"] != "a@b.c" {
+		t.Fatalf("payload = %#v", last)
 	}
 	if h.responseCount(t, 10) != 1 {
 		t.Fatal("expected one stored response")
@@ -289,9 +328,12 @@ func TestCreate_NoOriginSkipsHandler(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.handler.ServeHTTP(w, req)
 
-	if h.captcha.calls != 0 || h.notifier.calls != 0 || h.responseCount(t, 10) != 0 {
-		t.Fatalf("handler ran without Origin: captcha=%d notify=%d rows=%d",
-			h.captcha.calls, h.notifier.calls, h.responseCount(t, 10))
+	if h.captcha.calls != 0 || h.responseCount(t, 10) != 0 {
+		t.Fatalf("handler ran without Origin: captcha=%d rows=%d",
+			h.captcha.calls, h.responseCount(t, 10))
+	}
+	if calls, _ := h.notifier.snapshot(); calls != 0 {
+		t.Fatalf("handler ran without Origin: notify=%d", calls)
 	}
 }
 
@@ -413,8 +455,9 @@ func TestCreate_NotifierErrorStillSucceeds(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d", w.Code)
 	}
-	if h.notifier.calls != 1 {
-		t.Fatalf("notifier calls = %d", h.notifier.calls)
+	h.notifier.waitCall(t)
+	if calls, _ := h.notifier.snapshot(); calls != 1 {
+		t.Fatalf("notifier calls = %d", calls)
 	}
 	if h.responseCount(t, 10) != 1 {
 		t.Fatal("expected stored response")
@@ -457,10 +500,12 @@ func TestCreate_CustomCaptchaField(t *testing.T) {
 	if h.captcha.calls != 1 {
 		t.Fatalf("captcha calls = %d", h.captcha.calls)
 	}
-	if _, ok := h.notifier.last["cf-turnstile-response"]; ok {
-		t.Fatalf("captcha token leaked into payload: %#v", h.notifier.last)
+	h.notifier.waitCall(t)
+	_, last := h.notifier.snapshot()
+	if _, ok := last["cf-turnstile-response"]; ok {
+		t.Fatalf("captcha token leaked into payload: %#v", last)
 	}
-	if h.notifier.last["email"] != "a@b.c" {
-		t.Fatalf("payload = %#v", h.notifier.last)
+	if last["email"] != "a@b.c" {
+		t.Fatalf("payload = %#v", last)
 	}
 }

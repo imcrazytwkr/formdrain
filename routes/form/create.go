@@ -12,7 +12,6 @@ import (
 	"github.com/imcrazytwkr/formdrain/httpserver/contenttype"
 	"github.com/imcrazytwkr/formdrain/models/form_response"
 	"github.com/imcrazytwkr/formdrain/utils/bodyparser"
-	"github.com/imcrazytwkr/formdrain/utils/logutil"
 	"github.com/imcrazytwkr/formdrain/utils/maputil"
 	"github.com/imcrazytwkr/formdrain/validation"
 )
@@ -112,10 +111,7 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 
 	log.Debug().Str("form_id", formId).Str("response_id", responseId).Msg("saved response")
 
-	err = r.notificaionService.Send(formConfig.Notifiers, payload)
-	if err != nil {
-		logutil.UnwrapErr(log.Error(), err).Msg("failed to send notifications")
-	}
+	r.notificaionService.SendAsync(ctx, formConfig.Notifiers, payload)
 
 	if len(formConfig.RedirectTo) > 0 {
 		httpserver.HandleRedirect(ctx, w, http.StatusSeeOther, "form/redirect", formConfig.RedirectTo, nil)
