@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+var errInvalidOrigin = errors.New("CORS origin is not valid")
+
 var errFormTooLarge = errors.New("forms data can only be up to 4kb in size")
 
 func getErrFormNotFound(id string) error {
