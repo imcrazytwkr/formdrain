@@ -14,6 +14,7 @@ import (
 	"github.com/imcrazytwkr/formdrain/middleware"
 	"github.com/imcrazytwkr/formdrain/models/account"
 	m "github.com/imcrazytwkr/formdrain/models/http"
+	"github.com/imcrazytwkr/formdrain/repositories"
 	ar "github.com/imcrazytwkr/formdrain/repositories/account"
 	sr "github.com/imcrazytwkr/formdrain/repositories/session"
 	"github.com/imcrazytwkr/formdrain/routes/auth"
@@ -21,7 +22,7 @@ import (
 	"github.com/imcrazytwkr/formdrain/utils/testutil"
 )
 
-func newAuthHandler(t *testing.T) (http.Handler, *account.Account) {
+func newAuthHandler(t *testing.T) (http.Handler, *account.Account, repositories.SessionRepository) {
 	t.Helper()
 
 	db := testutil.OpenSqlite(t)
@@ -44,11 +45,33 @@ func newAuthHandler(t *testing.T) (http.Handler, *account.Account) {
 	router.Use(middleware.ResponseFormatParser(m.ContentTypeHTML, m.ContentTypeJSON))
 	router.Route("/auth", auth.NewAuthRouter(sessionRepository, accountService).Router)
 
-	return router, account
+	return router, account, sessionRepository
+}
+
+func loginSession(t *testing.T, h http.Handler) string {
+	t.Helper()
+
+	payload, _ := json.Marshal(map[string]string{
+		"email":    "user@example.com",
+		"password": "correct-password",
+	})
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/auth/login", bytes.NewReader(payload))
+	req.Header.Set(constants.HeaderAccept, "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("login status = %d body=%s", w.Code, w.Body.String())
+	}
+	cookies := w.Result().Cookies()
+	if len(cookies) < 1 || cookies[0].Name != constants.CookieSession || cookies[0].Value == "" {
+		t.Fatalf("cookies = %#v", cookies)
+	}
+	return cookies[0].Value
 }
 
 func TestLoginGet_HTMLOrigin(t *testing.T) {
-	h, _ := newAuthHandler(t)
+	h, _, _ := newAuthHandler(t)
 
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/auth/login?redirect=/admin", nil)
 	req.Header.Set(constants.HeaderAccept, "text/html")
@@ -65,7 +88,7 @@ func TestLoginGet_HTMLOrigin(t *testing.T) {
 }
 
 func TestLoginGet_InvalidRedirectBecomesRoot(t *testing.T) {
-	h, _ := newAuthHandler(t)
+	h, _, _ := newAuthHandler(t)
 
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/auth/login?redirect=https://evil.example/", nil)
 	req.Header.Set(constants.HeaderAccept, "text/html")
@@ -81,7 +104,7 @@ func TestLoginGet_InvalidRedirectBecomesRoot(t *testing.T) {
 }
 
 func TestLoginGet_JSONNotAcceptable(t *testing.T) {
-	h, _ := newAuthHandler(t)
+	h, _, _ := newAuthHandler(t)
 
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/auth/login", nil)
 	req.Header.Set(constants.HeaderAccept, "application/json")
@@ -94,7 +117,7 @@ func TestLoginGet_JSONNotAcceptable(t *testing.T) {
 }
 
 func TestLoginPost_JSONSuccess(t *testing.T) {
-	h, acct := newAuthHandler(t)
+	h, acct, _ := newAuthHandler(t)
 
 	payload, _ := json.Marshal(map[string]string{
 		"email":    "user@example.com",
@@ -124,7 +147,7 @@ func TestLoginPost_JSONSuccess(t *testing.T) {
 }
 
 func TestLoginPost_JSONUnauthorized(t *testing.T) {
-	h, _ := newAuthHandler(t)
+	h, _, _ := newAuthHandler(t)
 
 	payload, _ := json.Marshal(map[string]string{
 		"email":    "user@example.com",
@@ -142,7 +165,7 @@ func TestLoginPost_JSONUnauthorized(t *testing.T) {
 }
 
 func TestLoginPost_HTMLRedirect(t *testing.T) {
-	h, _ := newAuthHandler(t)
+	h, _, _ := newAuthHandler(t)
 
 	form := url.Values{}
 	form.Set("email", "user@example.com")

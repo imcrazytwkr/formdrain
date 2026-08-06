@@ -8,6 +8,7 @@ import (
 
 const actionForm = "form"
 const actionLogin = "login"
+const actionLogout = "logout"
 
 func getLoggerForAction(ctx context.Context, action string) zerolog.Logger {
 	return zerolog.Ctx(ctx).With().Str("controller", "auth").Str("action", action).Logger()

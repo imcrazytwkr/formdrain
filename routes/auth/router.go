@@ -24,4 +24,5 @@ func (r *authRouter) Router(router chi.Router) {
 	router.Use(middleware.ContentTypeParser())
 	router.Get("/login", r.HandleLoginForm)
 	router.Post("/login", r.HandleLogin)
+	router.Post("/logout", r.HandleLogout)
 }
