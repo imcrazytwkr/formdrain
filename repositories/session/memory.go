@@ -41,7 +41,7 @@ func (r *memorySessionRepository) Create(_ context.Context, session *m.Session) 
 }
 
 func (r *memorySessionRepository) GetByID(ctx context.Context, id string) (*m.Session, error) {
-	if len(id) < 1 {
+	if uuid.Validate(id) != nil {
 		return nil, nil
 	}
 
