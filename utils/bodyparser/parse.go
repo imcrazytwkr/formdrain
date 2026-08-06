@@ -10,7 +10,7 @@ import (
 
 func Parse(req *http.Request) (map[string]any, error) {
 	contentType := contenttype.GetContentType(req)
-	parser, ok := ParsersNew[contentType]
+	parser, ok := Parsers[contentType]
 	if !ok {
 		return nil, ErrUnsupportedContentType
 	}
