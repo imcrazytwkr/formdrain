@@ -17,7 +17,8 @@ func (p *jsonParser) Parse(body []byte) (map[string]any, error) {
 	dec.UseNumber()
 
 	var raw map[string]any
-	if err := dec.Decode(&raw); err != nil {
+	err := dec.Decode(&raw)
+	if err != nil {
 		return nil, err
 	}
 
