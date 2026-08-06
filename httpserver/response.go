@@ -6,16 +6,17 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/imcrazytwkr/formdrain/constants"
 	m "github.com/imcrazytwkr/formdrain/models/http"
 	"github.com/rs/zerolog"
 )
 
 func HandleResponse(ctx context.Context, w http.ResponseWriter, status int, name string, params any) {
-	format := responseFormat(w)
+	format := ResponseFormat(w)
 
 	str, ok := params.(string)
 	if ok {
-		setResponseContentType(w, format)
+		w.Header().Set(constants.HeaderContentType, format.String())
 		w.WriteHeader(status)
 		io.WriteString(w, str)
 		return
@@ -30,7 +31,7 @@ func HandleResponse(ctx context.Context, w http.ResponseWriter, status int, name
 }
 
 func writeJSON(ctx context.Context, w http.ResponseWriter, status int, params any) {
-	setResponseContentType(w, m.ContentTypeJSON)
+	w.Header().Set(constants.HeaderContentType, m.ContentTypeJSON.String())
 	w.WriteHeader(status)
 
 	body, err := json.Marshal(params)
@@ -50,7 +51,7 @@ type templateDataProvider interface {
 }
 
 func writeHTML(ctx context.Context, w http.ResponseWriter, status int, name string, params any) {
-	setResponseContentType(w, m.ContentTypeHTML)
+	w.Header().Set(constants.HeaderContentType, m.ContentTypeHTML.String())
 	w.WriteHeader(status)
 
 	log := zerolog.Ctx(ctx)

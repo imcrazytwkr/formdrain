@@ -10,9 +10,9 @@ import (
 	"github.com/imcrazytwkr/formdrain/utils/stringutil"
 )
 
-// responseFormat reads the response Content-Type header.
+// ResponseFormat reads the response Content-Type header.
 // If unset or unrecognized, falls back to HTML.
-func responseFormat(w http.ResponseWriter) m.ContentType {
+func ResponseFormat(w http.ResponseWriter) m.ContentType {
 	raw := w.Header().Get(constants.HeaderContentType)
 	if len(raw) < 1 {
 		return m.ContentTypeHTML
@@ -29,8 +29,4 @@ func responseFormat(w http.ResponseWriter) m.ContentType {
 	}
 
 	return format
-}
-
-func setResponseContentType(w http.ResponseWriter, format m.ContentType) {
-	w.Header().Set(constants.HeaderContentType, format.String())
 }

@@ -37,7 +37,7 @@ func handleErrorMessage(ctx context.Context, w http.ResponseWriter, status int, 
 		message = http.StatusText(status)
 	}
 
-	format := responseFormat(w)
+	format := ResponseFormat(w)
 	switch format {
 	case m.ContentTypeJSON:
 		writeJSON(ctx, w, status, map[string]any{
