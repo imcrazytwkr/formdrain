@@ -34,3 +34,6 @@ go.work.sum
 
 # Notes
 /*.md
+
+# Auto-generated code
+*.gen.go
