@@ -2,14 +2,12 @@ package form
 
 import (
 	"errors"
-	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/httpserver"
 	"github.com/imcrazytwkr/formdrain/httpserver/clientip"
-	"github.com/imcrazytwkr/formdrain/httpserver/contenttype"
 	"github.com/imcrazytwkr/formdrain/models/form_response"
 	"github.com/imcrazytwkr/formdrain/utils/bodyparser"
 	"github.com/imcrazytwkr/formdrain/utils/maputil"
@@ -20,29 +18,14 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 	log := getLoggerForAction(req.Context(), actionSend)
 	ctx := log.WithContext(req.Context())
 
-	contentType := contenttype.GetContentType(req)
-	parser, ok := bodyparser.ParsersNew[contentType]
-	if !ok {
-		httpserver.HandleError(ctx, w, http.StatusUnsupportedMediaType, getErrUnsupportedFormType(contentType))
-		return
-	}
-
-	if req.ContentLength > maxBodySize {
-		httpserver.HandleError(ctx, w, http.StatusRequestEntityTooLarge, errFormTooLarge)
-		return
-	}
-
-	// @NOTE: despite what you may think considering the earlier Content-Length check,
-	// you can never trust your users to correctly set the headers
-	body, err := io.ReadAll(io.LimitReader(req.Body, maxBodySize))
+	formData, err := bodyparser.Parse(req)
 	if err != nil {
-		httpserver.HandleError(ctx, w, http.StatusBadRequest, getErrMalformedFormData(contentType))
-		return
-	}
+		if errors.Is(err, bodyparser.ErrBodyTooLarge) {
+			httpserver.HandleError(ctx, w, http.StatusRequestEntityTooLarge, errFormTooLarge)
+			return
+		}
 
-	formData, err := parser.Parse(body)
-	if err != nil {
-		httpserver.HandleError(ctx, w, http.StatusBadRequest, getErrMalformedFormData(contentType))
+		httpserver.HandleError(ctx, w, http.StatusBadRequest, err)
 		return
 	}
 
