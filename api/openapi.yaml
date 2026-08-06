@@ -1,0 +1,55 @@
+openapi: 3.0.3
+info:
+  title: Formdrain API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+paths:
+  /users/current:
+    get:
+      operationId: getCurrentUser
+      summary: Get the currently authenticated user
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: formdrain_session
+  schemas:
+    User:
+      type: object
+      required:
+        - id
+        - email
+      properties:
+        id:
+          type: integer
+          format: int64
+        email:
+          type: string
+          format: email
+    Error:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: integer
+        message:
+          type: string

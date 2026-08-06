@@ -18,6 +18,7 @@ import (
 	frr "github.com/imcrazytwkr/formdrain/repositories/form_response"
 	sr "github.com/imcrazytwkr/formdrain/repositories/session"
 	scr "github.com/imcrazytwkr/formdrain/repositories/site_config"
+	"github.com/imcrazytwkr/formdrain/routes/apiv1"
 	"github.com/imcrazytwkr/formdrain/routes/auth"
 	"github.com/imcrazytwkr/formdrain/routes/form"
 	as "github.com/imcrazytwkr/formdrain/services/account"
@@ -78,6 +79,11 @@ func main() {
 		auth.NewAuthRouter(
 			sessionRepository,
 			accountService,
+		).Router)
+	router.Route("/api/v1",
+		apiv1.NewApiV1Router(
+			sessionRepository,
+			accountRepository,
 		).Router)
 	router.Route("/form",
 		form.NewFormRouter(

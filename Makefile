@@ -1,4 +1,10 @@
 TARGET := formdrain
+
+OPENAPI_SPEC := api/openapi.yaml
+OAPI_CONFIG := routes/apiv1/api/oapi-codegen.yaml
+OAPI_GENERATE := routes/apiv1/api/generate.go
+GENERATED := routes/apiv1/api/server.gen.go
+
 SOURCES := $(shell find . -name '*.go' -not -name '*_test.go')
 
 .PHONY: all clean build format test
@@ -6,13 +12,18 @@ SOURCES := $(shell find . -name '*.go' -not -name '*_test.go')
 all: clean build
 
 clean:
-	rm -f $(TARGET)
+	rm -f '$(TARGET)' '$(GENERATED)'
 	go clean -testcache
 
-build: $(TARGET)
+$(GENERATED): $(OPENAPI_SPEC) $(OAPI_CONFIG) $(OAPI_GENERATE)
+	go generate ./routes/apiv1/api/...
 
-$(TARGET): $(SOURCES)
+generate: $(GENERATED)
+
+$(TARGET):  $(GENERATED) $(SOURCES)
 	go build -o $(TARGET) .
+
+build: $(TARGET)
 
 format:
 	go fmt ./...
