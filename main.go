@@ -13,10 +13,14 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/middleware"
 	m "github.com/imcrazytwkr/formdrain/models/http"
+	ar "github.com/imcrazytwkr/formdrain/repositories/account"
 	fcr "github.com/imcrazytwkr/formdrain/repositories/form_config"
 	frr "github.com/imcrazytwkr/formdrain/repositories/form_response"
+	sr "github.com/imcrazytwkr/formdrain/repositories/session"
 	scr "github.com/imcrazytwkr/formdrain/repositories/site_config"
+	"github.com/imcrazytwkr/formdrain/routes/auth"
 	"github.com/imcrazytwkr/formdrain/routes/form"
+	as "github.com/imcrazytwkr/formdrain/services/account"
 	cvs "github.com/imcrazytwkr/formdrain/services/captcha_validation"
 	ns "github.com/imcrazytwkr/formdrain/services/notification"
 	"github.com/imcrazytwkr/formdrain/utils/httpclient"
@@ -56,9 +60,12 @@ func main() {
 	formConfigRepository := fcr.NewSqliteFormConfigRepository(sqliteDB)
 	formResponseRepository := frr.NewSqliteFormResponseRepository(sqliteDB)
 	siteConfigRepository := scr.NewSqliteSiteConfigRepository(sqliteDB)
+	accountRepository := ar.NewSqliteAccountRepository(sqliteDB)
+	sessionRepository := sr.NewMemorySessionRepository()
 
 	httpClient := httpclient.DefaultClient()
 	captchaValidationService := cvs.NewHttpCaptchaValidationService(httpClient, &log.Logger)
+	accountService := as.NewService(accountRepository)
 
 	brevoAPIKey, err := getBrevoAPIKey()
 	if err != nil {
@@ -67,6 +74,11 @@ func main() {
 
 	notificationService := ns.NewHttpNotificationService(httpClient, brevoAPIKey)
 
+	router.Route("/auth",
+		auth.NewAuthRouter(
+			sessionRepository,
+			accountService,
+		).Router)
 	router.Route("/form",
 		form.NewFormRouter(
 			formConfigRepository,
