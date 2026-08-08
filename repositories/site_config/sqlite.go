@@ -17,7 +17,7 @@ func NewSqliteSiteConfigRepository(db *sql.DB) repositories.SiteConfigRepository
 	return &sqliteSiteConfigRepository{db: db}
 }
 
-const selectSiteConfigById = `SELECT hostname FROM sites WHERE id = ?`
+const selectSiteConfigById = `SELECT hostname, owner_id FROM sites WHERE id = ?`
 
 func (r *sqliteSiteConfigRepository) GetSiteConfigById(ctx context.Context, id int64) (*site_config.SiteConfig, error) {
 	if id < 1 {
@@ -25,7 +25,7 @@ func (r *sqliteSiteConfigRepository) GetSiteConfigById(ctx context.Context, id i
 	}
 
 	var config site_config.SiteConfig
-	err := r.db.QueryRowContext(ctx, selectSiteConfigById, id).Scan(&config.Hostname)
+	err := r.db.QueryRowContext(ctx, selectSiteConfigById, id).Scan(&config.Hostname, &config.OwnerId)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil

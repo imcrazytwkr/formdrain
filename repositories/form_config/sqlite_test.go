@@ -12,8 +12,8 @@ func TestGetFormConfigById(t *testing.T) {
 	db := testutil.OpenSqlite(t)
 	ctx := t.Context()
 
+	testutil.SeedSite(t, db, 1, "example.com")
 	_, err := db.Exec(`
-		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
 		INSERT INTO forms (id, site_id, captcha_type, redirect_to, field_schema, schema_version, notifiers)
 		VALUES (
 			10,
@@ -71,8 +71,8 @@ func TestGetFormConfigById(t *testing.T) {
 func TestGetFormConfigById_CorruptFieldSchema(t *testing.T) {
 	db := testutil.OpenSqlite(t)
 
+	testutil.SeedSite(t, db, 1, "example.com")
 	_, err := db.Exec(`
-		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
 		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
 		VALUES (20, 1, 'hcaptcha', '"not-an-object"', 1, '{}');
 	`)
@@ -90,8 +90,8 @@ func TestGetFormConfigById_CorruptFieldSchema(t *testing.T) {
 func TestGetFormConfigById_InvalidCaptchaType(t *testing.T) {
 	db := testutil.OpenSqlite(t)
 
+	testutil.SeedSite(t, db, 1, "example.com")
 	_, err := db.Exec(`
-		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
 		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
 		VALUES (21, 1, 'bogus', '{"version":1,"fields":[]}', 1, '{}');
 	`)
@@ -109,8 +109,8 @@ func TestGetFormConfigById_InvalidCaptchaType(t *testing.T) {
 func TestGetFormConfigById_CorruptNotifiers(t *testing.T) {
 	db := testutil.OpenSqlite(t)
 
+	testutil.SeedSite(t, db, 1, "example.com")
 	_, err := db.Exec(`
-		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
 		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
 		VALUES (22, 1, 'hcaptcha', '{"version":1,"fields":[]}', 1, '"nope"');
 	`)
@@ -128,8 +128,8 @@ func TestGetFormConfigById_CorruptNotifiers(t *testing.T) {
 func TestGetFormConfigById_CaptchaField(t *testing.T) {
 	db := testutil.OpenSqlite(t)
 
+	testutil.SeedSite(t, db, 1, "example.com")
 	_, err := db.Exec(`
-		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
 		INSERT INTO forms (id, site_id, captcha_type, captcha_field, field_schema, schema_version, notifiers)
 		VALUES (30, 1, 'hcaptcha', 'cf-turnstile-response', '{"version":1,"fields":[]}', 1, '{}');
 	`)

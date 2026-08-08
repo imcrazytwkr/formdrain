@@ -46,6 +46,12 @@ func OpenSqlite(t *testing.T) *sql.DB {
 		t.Fatalf("open sqlite: %v", err)
 	}
 
+	_, err = db.Exec(`PRAGMA foreign_keys = ON`)
+	if err != nil {
+		_ = db.Close()
+		t.Fatalf("enable foreign_keys: %v", err)
+	}
+
 	for _, name := range names {
 		migrationSQL, err := os.ReadFile(filepath.Join(migrationsDir, name))
 		if err != nil {

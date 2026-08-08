@@ -127,12 +127,9 @@ func newHarness(t *testing.T) *harness {
 func (h *harness) seed(t *testing.T, formID int64, redirectTo string) {
 	t.Helper()
 
-	_, err := h.db.Exec(`INSERT OR IGNORE INTO sites (id, hostname) VALUES (1, 'example.com')`)
-	if err != nil {
-		t.Fatalf("seed site: %v", err)
-	}
+	testutil.SeedSite(t, h.db, 1, "example.com")
 
-	_, err = h.db.Exec(`DELETE FROM forms WHERE id = ?`, formID)
+	_, err := h.db.Exec(`DELETE FROM forms WHERE id = ?`, formID)
 	if err != nil {
 		t.Fatalf("seed delete form: %v", err)
 	}
