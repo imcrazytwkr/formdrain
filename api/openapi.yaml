@@ -24,6 +24,52 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /sites:
+    get:
+      operationId: listSites
+      summary: List sites owned by the current user
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [id, hostname]
+            default: id
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Page of sites
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteList"
+        "400":
+          description: Invalid sort or cursor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   securitySchemes:
     cookieAuth:
@@ -43,6 +89,32 @@ components:
         email:
           type: string
           format: email
+    Site:
+      type: object
+      required:
+        - id
+        - hostname
+        - owner_id
+      properties:
+        id:
+          type: integer
+          format: int64
+        hostname:
+          type: string
+        owner_id:
+          type: integer
+          format: int64
+    SiteList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Site"
+        next_cursor:
+          type: string
     Error:
       type: object
       required:
