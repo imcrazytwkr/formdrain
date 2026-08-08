@@ -11,10 +11,7 @@ func TestGetSiteConfigById(t *testing.T) {
 	db := testutil.OpenSqlite(t)
 	ctx := t.Context()
 
-	_, err := db.Exec(`INSERT INTO sites (id, hostname) VALUES (7, 'forms.example.com')`)
-	if err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	ownerID := testutil.SeedSite(t, db, 7, "forms.example.com")
 
 	repo := scr.NewSqliteSiteConfigRepository(db)
 
@@ -22,8 +19,8 @@ func TestGetSiteConfigById(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetSiteConfigById: %v", err)
 	}
-	if got == nil || got.SiteId != 7 || got.Hostname != "forms.example.com" {
-		t.Fatalf("got %+v", got)
+	if got == nil || got.SiteId != 7 || got.Hostname != "forms.example.com" || got.OwnerId != ownerID {
+		t.Fatalf("got %+v want owner_id=%d", got, ownerID)
 	}
 
 	missing, err := repo.GetSiteConfigById(ctx, 1)

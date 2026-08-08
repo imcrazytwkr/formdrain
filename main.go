@@ -137,6 +137,12 @@ func openSqlite() (*sql.DB, error) {
 		return nil, err
 	}
 
+	_, err = db.Exec(`PRAGMA foreign_keys = ON`)
+	if err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+
 	err = db.Ping()
 	if err != nil {
 		_ = db.Close()

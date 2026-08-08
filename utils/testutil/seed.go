@@ -1,0 +1,39 @@
+package testutil
+
+import (
+	"database/sql"
+	"fmt"
+	"testing"
+	"time"
+)
+
+// SeedSite inserts an account and a site owned by that account. Returns the account id.
+func SeedSite(t *testing.T, db *sql.DB, siteID int64, hostname string) int64 {
+	t.Helper()
+
+	res, err := db.Exec(
+		`INSERT INTO accounts (email, password_hash, created_at) VALUES (?, ?, ?)`,
+		fmt.Sprintf("owner-%d@example.com", siteID),
+		"unused-hash",
+		time.Now().UTC().Format(time.RFC3339),
+	)
+	if err != nil {
+		t.Fatalf("seed account: %v", err)
+	}
+	ownerID, err := res.LastInsertId()
+	if err != nil {
+		t.Fatalf("account id: %v", err)
+	}
+
+	_, err = db.Exec(
+		`INSERT INTO sites (id, hostname, owner_id) VALUES (?, ?, ?)`,
+		siteID,
+		hostname,
+		ownerID,
+	)
+	if err != nil {
+		t.Fatalf("seed site: %v", err)
+	}
+
+	return ownerID
+}

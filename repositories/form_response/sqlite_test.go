@@ -15,8 +15,8 @@ import (
 func TestSaveFormResponse(t *testing.T) {
 	db := testutil.OpenSqlite(t)
 
+	testutil.SeedSite(t, db, 1, "example.com")
 	_, err := db.Exec(`
-		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
 		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
 		VALUES (10, 1, 'hcaptcha', '{"version":1,"fields":[]}', 3, '{}');
 	`)
@@ -80,8 +80,8 @@ func TestSaveFormResponse_Nil(t *testing.T) {
 func TestSaveFormResponse_NoClientIP(t *testing.T) {
 	db := testutil.OpenSqlite(t)
 
+	testutil.SeedSite(t, db, 1, "example.com")
 	_, err := db.Exec(`
-		INSERT INTO sites (id, hostname) VALUES (1, 'example.com');
 		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
 		VALUES (10, 1, 'hcaptcha', '{"version":1,"fields":[]}', 1, '{}');
 	`)
