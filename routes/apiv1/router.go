@@ -15,15 +15,18 @@ import (
 type apiV1Router struct {
 	sessions repositories.SessionRepository
 	accounts repositories.AccountRepository
+	sites    repositories.SiteConfigRepository
 }
 
 func NewApiV1Router(
 	sessions repositories.SessionRepository,
 	accounts repositories.AccountRepository,
+	sites repositories.SiteConfigRepository,
 ) routes.RouteContainer {
 	return &apiV1Router{
 		sessions: sessions,
 		accounts: accounts,
+		sites:    sites,
 	}
 }
 

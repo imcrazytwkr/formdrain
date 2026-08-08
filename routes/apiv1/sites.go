@@ -1,0 +1,108 @@
+package apiv1
+
+import (
+	"context"
+	"net/http"
+
+	"github.com/imcrazytwkr/formdrain/middleware"
+	"github.com/imcrazytwkr/formdrain/models/site_config"
+	"github.com/imcrazytwkr/formdrain/routes/apiv1/api"
+)
+
+const defaultSiteListLimit = 50
+const maxSiteListLimit = 100
+
+var listSitesUnauthorized = api.ListSites401JSONResponse{
+	Status:  http.StatusUnauthorized,
+	Message: http.StatusText(http.StatusUnauthorized),
+}
+
+var listSitesBadRequest = api.ListSites400JSONResponse{
+	Status:  http.StatusBadRequest,
+	Message: http.StatusText(http.StatusBadRequest),
+}
+
+func (r *apiV1Router) ListSites(ctx context.Context, req api.ListSitesRequestObject) (api.ListSitesResponseObject, error) {
+	sess, ok := middleware.SessionFromContext(ctx)
+	if !ok {
+		return listSitesUnauthorized, nil
+	}
+
+	sort := api.Id
+	if req.Params.Sort != nil {
+		if !req.Params.Sort.Valid() {
+			return listSitesBadRequest, nil
+		}
+		sort = *req.Params.Sort
+	}
+
+	limit := defaultSiteListLimit
+	if req.Params.Limit != nil {
+		limit = *req.Params.Limit
+		if limit < 1 {
+			limit = defaultSiteListLimit
+		} else if limit > maxSiteListLimit {
+			limit = maxSiteListLimit
+		}
+	}
+
+	fetchLimit := limit + 1
+	var rows []*site_config.SiteConfig
+	var err error
+
+	switch sort {
+	case api.Id:
+		var afterID int64
+		if req.Params.Cursor != nil && len(*req.Params.Cursor) > 0 {
+			afterID, err = decodeIDCursor(*req.Params.Cursor)
+			if err != nil {
+				return listSitesBadRequest, nil
+			}
+		}
+		rows, err = r.sites.ListByOwnerIDAfterID(ctx, sess.AccountID, afterID, fetchLimit)
+	case api.Hostname:
+		var afterHostname string
+		var afterID int64
+		if req.Params.Cursor != nil && len(*req.Params.Cursor) > 0 {
+			afterHostname, afterID, err = decodeHostnameCursor(*req.Params.Cursor)
+			if err != nil {
+				return listSitesBadRequest, nil
+			}
+		}
+		rows, err = r.sites.ListByOwnerIDAfterHostname(ctx, sess.AccountID, afterHostname, afterID, fetchLimit)
+	default:
+		return listSitesBadRequest, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
+	}
+
+	items := make([]api.Site, len(rows))
+	for i, row := range rows {
+		items[i] = api.Site{
+			Id:       row.SiteId,
+			Hostname: row.Hostname,
+			OwnerId:  row.OwnerId,
+		}
+	}
+
+	resp := api.ListSites200JSONResponse{Items: items}
+	if hasMore && len(rows) > 0 {
+		last := rows[len(rows)-1]
+		var next string
+		switch sort {
+		case api.Id:
+			next = encodeIDCursor(last.SiteId)
+		case api.Hostname:
+			next = encodeHostnameCursor(last.Hostname, last.SiteId)
+		}
+		resp.NextCursor = &next
+	}
+
+	return resp, nil
+}

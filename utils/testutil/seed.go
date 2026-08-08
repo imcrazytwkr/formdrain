@@ -37,3 +37,18 @@ func SeedSite(t *testing.T, db *sql.DB, siteID int64, hostname string) int64 {
 
 	return ownerID
 }
+
+// SeedSiteForOwner inserts a site owned by an existing account.
+func SeedSiteForOwner(t *testing.T, db *sql.DB, ownerID, siteID int64, hostname string) {
+	t.Helper()
+
+	_, err := db.Exec(
+		`INSERT INTO sites (id, hostname, owner_id) VALUES (?, ?, ?)`,
+		siteID,
+		hostname,
+		ownerID,
+	)
+	if err != nil {
+		t.Fatalf("seed site: %v", err)
+	}
+}

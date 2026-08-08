@@ -84,6 +84,7 @@ func main() {
 		apiv1.NewApiV1Router(
 			sessionRepository,
 			accountRepository,
+			siteConfigRepository,
 		).Router)
 	router.Route("/form",
 		form.NewFormRouter(
