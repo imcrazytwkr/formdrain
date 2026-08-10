@@ -24,6 +24,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /sites/{id}:
+    get:
+      operationId: getSiteConfig
+      summary: Get a site config by ID
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Site config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Site not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /sites:
     get:
       operationId: listSites
