@@ -22,6 +22,33 @@ var listSitesBadRequest = api.ListSites400JSONResponse{
 	Message: http.StatusText(http.StatusBadRequest),
 }
 
+var getSiteConfigNotFound = api.GetSiteConfig404JSONResponse{
+	Status:  http.StatusNotFound,
+	Message: http.StatusText(http.StatusNotFound),
+}
+
+func (r *apiV1Router) GetSiteConfig(ctx context.Context, req api.GetSiteConfigRequestObject) (api.GetSiteConfigResponseObject, error) {
+	sess, ok := middleware.SessionFromContext(ctx)
+	if !ok {
+		return getSiteConfigNotFound, nil
+	}
+
+	config, err := r.sites.GetSiteConfigById(ctx, req.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	if config == nil || config.OwnerId != sess.AccountID {
+		return getSiteConfigNotFound, nil
+	}
+
+	return api.GetSiteConfig200JSONResponse{
+		Id:       config.SiteId,
+		Hostname: config.Hostname,
+		OwnerId:  config.OwnerId,
+	}, nil
+}
+
 func (r *apiV1Router) ListSites(ctx context.Context, req api.ListSitesRequestObject) (api.ListSitesResponseObject, error) {
 	sess, ok := middleware.SessionFromContext(ctx)
 	if !ok {
