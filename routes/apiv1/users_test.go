@@ -14,6 +14,7 @@ import (
 	m "github.com/imcrazytwkr/formdrain/models/http"
 	"github.com/imcrazytwkr/formdrain/models/session"
 	ar "github.com/imcrazytwkr/formdrain/repositories/account"
+	fcr "github.com/imcrazytwkr/formdrain/repositories/form_config"
 	sr "github.com/imcrazytwkr/formdrain/repositories/session"
 	scr "github.com/imcrazytwkr/formdrain/repositories/site_config"
 	"github.com/imcrazytwkr/formdrain/routes/apiv1"
@@ -42,11 +43,13 @@ func newApiV1Harness(t *testing.T) *apiV1Harness {
 	accounts := ar.NewSqliteAccountRepository(db)
 	sessions := sr.NewMemorySessionRepository()
 	sites := scr.NewSqliteSiteConfigRepository(db)
+	forms := fcr.NewSqliteFormConfigRepository(db)
 
 	hash, err := as.HashPassword("correct-password")
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	acct := &account.Account{Email: "user@example.com", PasswordHash: hash}
 	if err := accounts.Create(t.Context(), acct); err != nil {
 		t.Fatal(err)
@@ -62,7 +65,7 @@ func newApiV1Harness(t *testing.T) *apiV1Harness {
 
 	router := chi.NewRouter()
 	router.Use(middleware.ResponseFormatParser(m.ContentTypeHTML, m.ContentTypeJSON))
-	router.Route("/api/v1", apiv1.NewApiV1Router(sessions, accounts, sites).Router)
+	router.Route("/api/v1", apiv1.NewApiV1Router(sessions, accounts, sites, forms).Router)
 
 	return &apiV1Harness{
 		handler:   router,

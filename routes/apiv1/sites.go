@@ -55,21 +55,20 @@ func (r *apiV1Router) ListSites(ctx context.Context, req api.ListSitesRequestObj
 		return listSitesUnauthorized, nil
 	}
 
-	sort := api.Id
+	sort := api.ListSitesParamsSortId
 	if req.Params.Sort != nil {
 		if !req.Params.Sort.Valid() {
 			return listSitesBadRequest, nil
 		}
+
 		sort = *req.Params.Sort
 	}
 
 	limit := defaultSiteListLimit
 	if req.Params.Limit != nil {
-		limit = *req.Params.Limit
+		limit = min(*req.Params.Limit, maxSiteListLimit)
 		if limit < 1 {
 			limit = defaultSiteListLimit
-		} else if limit > maxSiteListLimit {
-			limit = maxSiteListLimit
 		}
 	}
 
@@ -78,7 +77,7 @@ func (r *apiV1Router) ListSites(ctx context.Context, req api.ListSitesRequestObj
 	var err error
 
 	switch sort {
-	case api.Id:
+	case api.ListSitesParamsSortId:
 		var afterID int64
 		if req.Params.Cursor != nil && len(*req.Params.Cursor) > 0 {
 			afterID, err = decodeIDCursor(*req.Params.Cursor)
@@ -87,7 +86,7 @@ func (r *apiV1Router) ListSites(ctx context.Context, req api.ListSitesRequestObj
 			}
 		}
 		rows, err = r.sites.ListByOwnerIDAfterID(ctx, sess.AccountID, afterID, fetchLimit)
-	case api.Hostname:
+	case api.ListSitesParamsSortHostname:
 		var afterHostname string
 		var afterID int64
 		if req.Params.Cursor != nil && len(*req.Params.Cursor) > 0 {
@@ -123,9 +122,9 @@ func (r *apiV1Router) ListSites(ctx context.Context, req api.ListSitesRequestObj
 		last := rows[len(rows)-1]
 		var next string
 		switch sort {
-		case api.Id:
+		case api.ListSitesParamsSortId:
 			next = encodeIDCursor(last.SiteId)
-		case api.Hostname:
+		case api.ListSitesParamsSortHostname:
 			next = encodeHostnameCursor(last.Hostname, last.SiteId)
 		}
 		resp.NextCursor = &next
