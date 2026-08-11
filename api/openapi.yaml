@@ -102,6 +102,58 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /forms:
+    get:
+      operationId: listForms
+      summary: List forms owned by the current user
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: site_id
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [id, site_id, hostname]
+            default: id
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Page of forms
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormList"
+        "400":
+          description: Invalid sort or cursor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   securitySchemes:
     cookieAuth:
@@ -145,6 +197,29 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Site"
+        next_cursor:
+          type: string
+    FormListItem:
+      type: object
+      required:
+        - id
+        - site_id
+      properties:
+        id:
+          type: integer
+          format: int64
+        site_id:
+          type: integer
+          format: int64
+    FormList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FormListItem"
         next_cursor:
           type: string
     Error:
