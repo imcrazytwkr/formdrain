@@ -36,11 +36,11 @@ func (r *sqliteFormConfigRepository) ListFormsByOwnerID(ctx context.Context, own
 		qb.WriteString(" ORDER BY f.site_id ASC, f.id ASC")
 	case "hostname":
 		if len(afterHostname) > 0 || afterID > 0 {
-			qb.WriteString("AND (s.hostname, f.id) > (?, ?)")
+			qb.WriteString(" AND (s.hostname, f.id) > (?, ?)")
 			args = append(args, afterHostname, afterID)
 		}
 
-		qb.WriteString("ORDER BY s.hostname ASC, f.id ASC")
+		qb.WriteString(" ORDER BY s.hostname ASC, f.id ASC")
 	case "id":
 		fallthrough
 	default:
@@ -49,7 +49,7 @@ func (r *sqliteFormConfigRepository) ListFormsByOwnerID(ctx context.Context, own
 			args = append(args, afterID)
 		}
 
-		qb.WriteString("ORDER BY f.id")
+		qb.WriteString(" ORDER BY f.id")
 	}
 
 	qb.WriteString(" LIMIT ?")

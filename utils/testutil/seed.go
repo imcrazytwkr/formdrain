@@ -52,3 +52,16 @@ func SeedSiteForOwner(t *testing.T, db *sql.DB, ownerID, siteID int64, hostname 
 		t.Fatalf("seed site: %v", err)
 	}
 }
+
+// SeedForm inserts a minimal form row for list/get repository tests.
+func SeedForm(t *testing.T, db *sql.DB, formID, siteID int64) {
+	t.Helper()
+
+	_, err := db.Exec(`
+		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
+		VALUES (?, ?, 'hcaptcha', '{"version":1,"fields":[]}', 1, '{}');
+	`, formID, siteID)
+	if err != nil {
+		t.Fatalf("seed form: %v", err)
+	}
+}
