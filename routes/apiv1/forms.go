@@ -7,6 +7,7 @@ import (
 	"github.com/imcrazytwkr/formdrain/middleware"
 	fc "github.com/imcrazytwkr/formdrain/models/form_config"
 	"github.com/imcrazytwkr/formdrain/routes/apiv1/api"
+	"github.com/imcrazytwkr/formdrain/routes/apiv1/cursors"
 	"github.com/imcrazytwkr/formdrain/routes/apiv1/mappers"
 )
 
@@ -111,7 +112,7 @@ func (r *apiV1Router) ListForms(ctx context.Context, req api.ListFormsRequestObj
 		}
 
 		if len(cursor) > 0 {
-			afterID, err = decodeIDCursor(cursor)
+			afterID, err = cursors.DecodeIDCursor(cursor)
 			if err != nil {
 				return listFormsBadRequest, nil
 			}
@@ -131,11 +132,11 @@ func (r *apiV1Router) ListForms(ctx context.Context, req api.ListFormsRequestObj
 		if len(cursor) > 0 {
 			switch sort {
 			case api.ListFormsParamsSortSiteId:
-				afterSiteID, afterID, err = decodeSiteIDCursor(cursor)
+				afterSiteID, afterID, err = cursors.DecodeSiteIDCursor(cursor)
 			case api.ListFormsParamsSortHostname:
-				afterHostname, afterID, err = decodeHostnameCursor(cursor)
+				afterHostname, afterID, err = cursors.DecodeHostnameCursor(cursor)
 			case api.ListFormsParamsSortId:
-				afterID, err = decodeIDCursor(cursor)
+				afterID, err = cursors.DecodeIDCursor(cursor)
 			default:
 				return listFormsBadRequest, nil
 			}
@@ -171,13 +172,13 @@ func (r *apiV1Router) ListForms(ctx context.Context, req api.ListFormsRequestObj
 		var next string
 		switch sort {
 		case api.ListFormsParamsSortSiteId:
-			next = encodeSiteIDCursor(last.SiteId, last.Id)
+			next = cursors.EncodeSiteIDCursor(last.SiteId, last.Id)
 		case api.ListFormsParamsSortHostname:
-			next = encodeHostnameCursor(last.Hostname, last.Id)
+			next = cursors.EncodeHostnameCursor(last.Hostname, last.Id)
 		case api.ListFormsParamsSortId:
 			fallthrough
 		default:
-			next = encodeIDCursor(last.Id)
+			next = cursors.EncodeIDCursor(last.Id)
 		}
 		res.NextCursor = &next
 	}

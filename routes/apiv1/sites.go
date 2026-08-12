@@ -7,6 +7,7 @@ import (
 	"github.com/imcrazytwkr/formdrain/middleware"
 	"github.com/imcrazytwkr/formdrain/models/site_config"
 	"github.com/imcrazytwkr/formdrain/routes/apiv1/api"
+	"github.com/imcrazytwkr/formdrain/routes/apiv1/cursors"
 )
 
 const defaultSiteListLimit = 50
@@ -80,7 +81,7 @@ func (r *apiV1Router) ListSites(ctx context.Context, req api.ListSitesRequestObj
 	case api.ListSitesParamsSortId:
 		var afterID int64
 		if req.Params.Cursor != nil && len(*req.Params.Cursor) > 0 {
-			afterID, err = decodeIDCursor(*req.Params.Cursor)
+			afterID, err = cursors.DecodeIDCursor(*req.Params.Cursor)
 			if err != nil {
 				return listSitesBadRequest, nil
 			}
@@ -90,7 +91,7 @@ func (r *apiV1Router) ListSites(ctx context.Context, req api.ListSitesRequestObj
 		var afterHostname string
 		var afterID int64
 		if req.Params.Cursor != nil && len(*req.Params.Cursor) > 0 {
-			afterHostname, afterID, err = decodeHostnameCursor(*req.Params.Cursor)
+			afterHostname, afterID, err = cursors.DecodeHostnameCursor(*req.Params.Cursor)
 			if err != nil {
 				return listSitesBadRequest, nil
 			}
@@ -123,9 +124,9 @@ func (r *apiV1Router) ListSites(ctx context.Context, req api.ListSitesRequestObj
 		var next string
 		switch sort {
 		case api.ListSitesParamsSortId:
-			next = encodeIDCursor(last.SiteId)
+			next = cursors.EncodeIDCursor(last.SiteId)
 		case api.ListSitesParamsSortHostname:
-			next = encodeHostnameCursor(last.Hostname, last.SiteId)
+			next = cursors.EncodeHostnameCursor(last.Hostname, last.SiteId)
 		}
 		resp.NextCursor = &next
 	}

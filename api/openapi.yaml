@@ -147,6 +147,17 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: order
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
         - name: limit
           in: query
           required: false
@@ -168,7 +179,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/FormResponseList"
         "400":
-          description: Invalid cursor
+          description: Invalid sort, order, or cursor
           content:
             application/json:
               schema:
