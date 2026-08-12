@@ -9,6 +9,7 @@ import (
 	"github.com/imcrazytwkr/formdrain/httpserver"
 	m "github.com/imcrazytwkr/formdrain/models/http"
 	"github.com/imcrazytwkr/formdrain/models/session"
+	"github.com/imcrazytwkr/formdrain/routes/auth/mappers"
 	"github.com/imcrazytwkr/formdrain/services/account"
 	"github.com/imcrazytwkr/formdrain/utils/bodyparser"
 	"github.com/imcrazytwkr/formdrain/utils/maputil"
@@ -68,7 +69,7 @@ func (r *authRouter) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	})
 
 	if httpserver.ResponseFormat(w) == m.ContentTypeJSON {
-		httpserver.HandleResponse(ctx, w, http.StatusCreated, "", a.AsUser())
+		httpserver.HandleResponse(ctx, w, http.StatusCreated, "", mappers.User(a))
 		return
 	}
 
