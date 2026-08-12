@@ -28,6 +28,14 @@ func NewTemplate(raw string) (*Template, error) {
 	}, nil
 }
 
+func (t *Template) String() string {
+	if t == nil || len(t.source) == 0 {
+		return ""
+	}
+
+	return t.source
+}
+
 func (t *Template) ExecuteString(data map[string]any) (string, error) {
 	if t == nil || t.inner == nil {
 		return "", ErrNilTemplate
