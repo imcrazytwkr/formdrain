@@ -134,6 +134,57 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /forms/{id}/responses:
+    get:
+      operationId: listFormResponses
+      summary: List responses for a form
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Page of form responses
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormResponseList"
+        "400":
+          description: Invalid cursor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Form not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /forms:
     get:
       operationId: listForms
@@ -252,6 +303,42 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/FormListItem"
+        next_cursor:
+          type: string
+    FormResponse:
+      type: object
+      required:
+        - id
+        - form_id
+        - created_at
+        - schema_version
+        - payload
+      properties:
+        id:
+          type: string
+          format: uuid
+        form_id:
+          type: integer
+          format: int64
+        created_at:
+          type: string
+          format: date-time
+        schema_version:
+          type: integer
+        client_ip:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+    FormResponseList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FormResponse"
         next_cursor:
           type: string
     Error:

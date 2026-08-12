@@ -13,10 +13,11 @@ import (
 )
 
 type apiV1Router struct {
-	sessions repositories.SessionRepository
-	accounts repositories.AccountRepository
-	sites    repositories.SiteConfigRepository
-	forms    repositories.FormConfigRepository
+	sessions  repositories.SessionRepository
+	accounts  repositories.AccountRepository
+	sites     repositories.SiteConfigRepository
+	forms     repositories.FormConfigRepository
+	responses repositories.FormResponseRepository
 }
 
 func NewApiV1Router(
@@ -24,12 +25,14 @@ func NewApiV1Router(
 	accounts repositories.AccountRepository,
 	sites repositories.SiteConfigRepository,
 	forms repositories.FormConfigRepository,
+	responses repositories.FormResponseRepository,
 ) routes.RouteContainer {
 	return &apiV1Router{
-		sessions: sessions,
-		accounts: accounts,
-		sites:    sites,
-		forms:    forms,
+		sessions:  sessions,
+		accounts:  accounts,
+		sites:     sites,
+		forms:     forms,
+		responses: responses,
 	}
 }
 

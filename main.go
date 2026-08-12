@@ -86,6 +86,7 @@ func main() {
 			accountRepository,
 			siteConfigRepository,
 			formConfigRepository,
+			formResponseRepository,
 		).Router)
 	router.Route("/form",
 		form.NewFormRouter(
