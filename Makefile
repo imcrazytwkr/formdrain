@@ -7,7 +7,7 @@ GENERATED := routes/apiv1/api/server.gen.go
 
 SOURCES := $(shell find . -name '*.go' -not -name '*_test.go')
 
-.PHONY: all clean build format test
+.PHONY: all clean build format test check
 
 all: clean build
 
@@ -29,5 +29,7 @@ format:
 	go fmt ./...
 	go mod tidy
 
-test: format
+test: $(GENERATED)
 	go test -timeout 30s ./... | sed '/^?/d'
+
+check: format test
