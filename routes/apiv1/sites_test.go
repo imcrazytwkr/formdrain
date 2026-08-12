@@ -8,7 +8,74 @@ import (
 
 	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/routes/apiv1/api"
+	"github.com/imcrazytwkr/formdrain/utils/testutil"
 )
+
+func TestGetSiteConfig_OK(t *testing.T) {
+	h := newApiV1Harness(t)
+	h.seedSite(7, "owned.example")
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/v1/sites/7", nil)
+	req.Header.Set(constants.HeaderAccept, "application/json")
+	req.AddCookie(&http.Cookie{Name: constants.CookieSession, Value: h.sessionID})
+	w := httptest.NewRecorder()
+	h.handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", w.Code, w.Body.String())
+	}
+
+	var got api.Site
+	if err := json.NewDecoder(w.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Id != 7 || got.Hostname != "owned.example" || got.OwnerId != h.account.ID {
+		t.Fatalf("got = %#v", got)
+	}
+}
+
+func TestGetSiteConfig_NotFound(t *testing.T) {
+	h := newApiV1Harness(t)
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/v1/sites/999", nil)
+	req.Header.Set(constants.HeaderAccept, "application/json")
+	req.AddCookie(&http.Cookie{Name: constants.CookieSession, Value: h.sessionID})
+	w := httptest.NewRecorder()
+	h.handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("status = %d body=%s", w.Code, w.Body.String())
+	}
+}
+
+func TestGetSiteConfig_OtherOwner(t *testing.T) {
+	h := newApiV1Harness(t)
+	testutil.SeedSite(t, h.db, 8, "other.example")
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/v1/sites/8", nil)
+	req.Header.Set(constants.HeaderAccept, "application/json")
+	req.AddCookie(&http.Cookie{Name: constants.CookieSession, Value: h.sessionID})
+	w := httptest.NewRecorder()
+	h.handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("status = %d body=%s", w.Code, w.Body.String())
+	}
+}
+
+func TestGetSiteConfig_Unauthorized(t *testing.T) {
+	h := newApiV1Harness(t)
+	h.seedSite(7, "owned.example")
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/v1/sites/7", nil)
+	req.Header.Set(constants.HeaderAccept, "application/json")
+	w := httptest.NewRecorder()
+	h.handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d body=%s", w.Code, w.Body.String())
+	}
+}
 
 func TestListSites_ByID(t *testing.T) {
 	h := newApiV1Harness(t)
