@@ -64,94 +64,98 @@ func (r *apiV1Router) ListFormResponses(ctx context.Context, req api.ListFormRes
 		}
 	}
 
+	var cursor string
+	if req.Params.Cursor != nil {
+		cursor = *req.Params.Cursor
+	}
+
 	var sortField string
 	if req.Params.Sort != nil {
 		sortField = *req.Params.Sort
+	}
+
+	if len(sortField) == 0 {
+		if req.Params.Order != nil {
+			return listFormResponsesBadRequest, nil
+		}
+
+		return r.listFormResponsesByCreatedAt(ctx, req.Id, cursor, limit)
 	}
 
 	if req.Params.Order != nil && !req.Params.Order.Valid() {
 		return listFormResponsesBadRequest, nil
 	}
 
-	var cursor string
-	if req.Params.Cursor != nil {
-		cursor = *req.Params.Cursor
+	return r.listFormResponsesByField(ctx, req.Id, formConfig.FieldSchema, sortField, req.Params.Order, cursor, limit)
+}
+
+func (r *apiV1Router) listFormResponsesByField(ctx context.Context, formID int64, schema fc.FieldSchema, sortField string, order *api.ListFormResponsesParamsOrder, cursor string, limit int) (api.ListFormResponsesResponseObject, error) {
+	field, ok := sortableSchemaField(schema, sortField)
+	if !ok {
+		return listFormResponsesBadRequest, nil
 	}
 
-	if len(sortField) > 0 {
-		field, ok := sortableSchemaField(formConfig.FieldSchema, sortField)
-		if !ok {
-			return listFormResponsesBadRequest, nil
-		}
-
-		desc := false
-		if req.Params.Order != nil {
-			desc = *req.Params.Order == api.Desc
-		}
-
-		var afterNull bool
-		var afterValue any
-		var afterID string
-		if len(cursor) > 0 {
-			decoded, err := cursors.DecodeFieldCursor(cursor)
-			if err != nil || decoded.Field != field.Name || decoded.Type != field.Type || decoded.Desc != desc {
-				return listFormResponsesBadRequest, nil
-			}
-
-			afterNull = decoded.Null
-			afterValue = decoded.Value
-			afterID = decoded.ID
-		}
-
-		rows, err := r.responses.ListFormResponsesByField(ctx, req.Id, field.Name, field.Type, desc, afterNull, afterValue, afterID, limit+1)
-		if err != nil {
-			return nil, err
-		}
-
-		hasMore := len(rows) > limit
-		if hasMore {
-			rows = rows[:limit]
-		}
-
-		items, err := mapFormResponses(rows)
-		if err != nil {
-			return nil, err
-		}
-
-		res := api.ListFormResponses200JSONResponse{Items: items}
-		if hasMore && len(rows) > 0 {
-			last := rows[len(rows)-1]
-			value, isNull := payloadSortValue(last.Payload, field.Name, field.Type)
-			next, err := cursors.EncodeFieldCursor(cursors.FieldCursor{
-				Field: field.Name,
-				Type:  field.Type,
-				Desc:  desc,
-				Null:  isNull,
-				Value: value,
-				ID:    last.Id,
-			})
-			if err != nil {
-				return nil, err
-			}
-			res.NextCursor = &next
-		}
-		return res, nil
+	desc := false
+	if order != nil {
+		desc = *order == api.Desc
 	}
 
-	var afterCreatedAt time.Time
+	var afterNull bool
+	var afterValue any
 	var afterID string
 	if len(cursor) > 0 {
-		afterCreatedAt, afterID, err = cursors.DecodeCreatedAtCursor(cursor)
-		if err != nil {
+		decoded, err := cursors.DecodeFieldCursor(cursor)
+		if err != nil || decoded.Field != field.Name || decoded.Type != field.Type || decoded.Desc != desc {
 			return listFormResponsesBadRequest, nil
 		}
+
+		afterNull = decoded.Null
+		afterValue = decoded.Value
+		afterID = decoded.ID
 	}
 
-	rows, err := r.responses.ListFormResponsesByFormID(ctx, req.Id, afterCreatedAt, afterID, limit+1)
+	rows, err := r.responses.ListFormResponsesByField(ctx, formID, field.Name, field.Type, desc, afterNull, afterValue, afterID, limit+1)
 	if err != nil {
 		return nil, err
 	}
 
+	return formResponseListPage(rows, limit, func(last *fr.FormResponse) (string, error) {
+		value, isNull := payloadSortValue(last.Payload, field.Name, field.Type)
+		return cursors.EncodeFieldCursor(cursors.FieldCursor{
+			Field: field.Name,
+			Type:  field.Type,
+			Desc:  desc,
+			Null:  isNull,
+			Value: value,
+			ID:    last.Id,
+		})
+	})
+}
+
+func (r *apiV1Router) listFormResponsesByCreatedAt(ctx context.Context, formID int64, cursor string, limit int) (api.ListFormResponsesResponseObject, error) {
+	var afterCreatedAt time.Time
+	var afterID string
+	if len(cursor) > 0 {
+		decodedAt, decodedID, err := cursors.DecodeCreatedAtCursor(cursor)
+		if err != nil {
+			return listFormResponsesBadRequest, nil
+		}
+
+		afterCreatedAt = decodedAt
+		afterID = decodedID
+	}
+
+	rows, err := r.responses.ListFormResponsesByFormID(ctx, formID, afterCreatedAt, afterID, limit+1)
+	if err != nil {
+		return nil, err
+	}
+
+	return formResponseListPage(rows, limit, func(last *fr.FormResponse) (string, error) {
+		return cursors.EncodeCreatedAtCursor(last.CreatedAt, last.Id), nil
+	})
+}
+
+func formResponseListPage(rows []*fr.FormResponse, limit int, nextCursor func(*fr.FormResponse) (string, error)) (api.ListFormResponsesResponseObject, error) {
 	hasMore := len(rows) > limit
 	if hasMore {
 		rows = rows[:limit]
@@ -163,11 +167,16 @@ func (r *apiV1Router) ListFormResponses(ctx context.Context, req api.ListFormRes
 	}
 
 	res := api.ListFormResponses200JSONResponse{Items: items}
-	if hasMore && len(rows) > 0 {
-		last := rows[len(rows)-1]
-		next := cursors.EncodeCreatedAtCursor(last.CreatedAt, last.Id)
-		res.NextCursor = &next
+	if !hasMore || len(rows) < 1 {
+		return res, nil
 	}
+
+	next, err := nextCursor(rows[len(rows)-1])
+	if err != nil {
+		return nil, err
+	}
+
+	res.NextCursor = &next
 	return res, nil
 }
 
