@@ -102,6 +102,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /forms/{id}:
+    get:
+      operationId: getFormConfig
+      summary: Get a form config by ID
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Form config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormConfig"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Form not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /forms:
     get:
       operationId: listForms
@@ -232,3 +264,144 @@ components:
           type: integer
         message:
           type: string
+    FormConfig:
+      type: object
+      required:
+        - id
+        - site_id
+        - captcha_type
+        - field_schema
+        - schema_version
+        - notifiers
+      properties:
+        id:
+          type: integer
+          format: int64
+        site_id:
+          type: integer
+          format: int64
+        captcha_type:
+          $ref: "#/components/schemas/CaptchaType"
+        captcha_field:
+          type: string
+        redirect_to:
+          type: string
+        field_schema:
+          $ref: "#/components/schemas/FieldSchema"
+        schema_version:
+          type: integer
+        notifiers:
+          $ref: "#/components/schemas/NotifiersConfig"
+    CaptchaType:
+      type: string
+      enum:
+        - hcaptcha
+        - recaptcha
+    FieldSchema:
+      type: object
+      required:
+        - version
+        - fields
+      properties:
+        version:
+          type: integer
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/Field"
+    Field:
+      type: object
+      required:
+        - name
+        - type
+        - required
+      properties:
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/FieldType"
+        required:
+          type: boolean
+        items:
+          $ref: "#/components/schemas/FieldItems"
+    FieldType:
+      type: string
+      enum:
+        - string
+        - number
+        - boolean
+        - array
+    FieldItems:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/FieldType"
+    NotifiersConfig:
+      type: object
+      properties:
+        discord:
+          $ref: "#/components/schemas/DiscordConfig"
+        brevo:
+          $ref: "#/components/schemas/BrevoConfig"
+    DiscordConfig:
+      type: object
+      properties:
+        webhooks:
+          type: array
+          items:
+            $ref: "#/components/schemas/WebhookKey"
+        author:
+          $ref: "#/components/schemas/Author"
+        title:
+          type: string
+        url:
+          type: string
+        template:
+          type: string
+        color:
+          type: integer
+    WebhookKey:
+      type: object
+      required:
+        - snowflake
+        - token
+      properties:
+        snowflake:
+          type: string
+        token:
+          type: string
+    Author:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        icon_url:
+          type: string
+    BrevoConfig:
+      type: object
+      required:
+        - recipients
+        - subject
+      properties:
+        recipients:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailContact"
+        subject:
+          type: string
+        template:
+          type: string
+    EmailContact:
+      type: object
+      required:
+        - email
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
