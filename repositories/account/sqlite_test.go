@@ -71,3 +71,43 @@ func TestSqliteAccountRepository_UniqueEmail(t *testing.T) {
 		t.Fatal("expected unique email error")
 	}
 }
+
+func TestSqliteAccountRepository_GetByID(t *testing.T) {
+	db := testutil.OpenSqlite(t)
+	repo := ar.NewSqliteAccountRepository(db)
+	ctx := t.Context()
+
+	hash, err := account.HashPassword("secret")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	acct := &ma.Account{Email: "id@example.com", PasswordHash: hash}
+	if err := repo.Create(ctx, acct); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := repo.GetByID(ctx, acct.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got == nil {
+		t.Fatal("expected account")
+	}
+	if got.ID != acct.ID || got.Email != acct.Email || got.PasswordHash != hash {
+		t.Fatalf("got = %#v", got)
+	}
+
+	missing, err := repo.GetByID(ctx, acct.ID+999)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if missing != nil {
+		t.Fatalf("expected nil, got %#v", missing)
+	}
+
+	invalid, err := repo.GetByID(ctx, 0)
+	if err != nil || invalid != nil {
+		t.Fatalf("id 0: got %#v err %v", invalid, err)
+	}
+}
