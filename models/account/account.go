@@ -8,10 +8,3 @@ type Account struct {
 	PasswordHash string
 	CreatedAt    time.Time
 }
-
-func (a *Account) AsUser() *User {
-	return &User{
-		ID:    a.ID,
-		Email: a.Email,
-	}
-}
