@@ -62,9 +62,32 @@ func (r *apiV1Router) GetFormConfig(ctx context.Context, req api.GetFormConfigRe
 }
 
 func (r *apiV1Router) ListForms(ctx context.Context, req api.ListFormsRequestObject) (api.ListFormsResponseObject, error) {
-	session, ok := middleware.SessionFromContext(ctx)
+	sess, ok := middleware.SessionFromContext(ctx)
 	if !ok {
 		return listFormsUnauthorized, nil
+	}
+
+	limit := defaultFormListLimit
+	if req.Params.Limit != nil {
+		limit = min(*req.Params.Limit, maxFormListLimit)
+		if limit < 1 {
+			limit = defaultFormListLimit
+		}
+	}
+
+	var cursor string
+	if req.Params.Cursor != nil {
+		cursor = *req.Params.Cursor
+	}
+
+	var siteId int64
+	if req.Params.SiteId != nil {
+		siteId = *req.Params.SiteId
+	}
+
+	if siteId > 0 {
+		// Site filter skips the owner join; ownership is checked on the site first.
+		return r.listFormsForSite(ctx, sess.AccountID, siteId, cursor, limit)
 	}
 
 	sort := api.ListFormsParamsSortId
@@ -76,83 +99,67 @@ func (r *apiV1Router) ListForms(ctx context.Context, req api.ListFormsRequestObj
 		sort = *req.Params.Sort
 	}
 
-	limit := defaultFormListLimit
-	if req.Params.Limit != nil {
-		limit = min(*req.Params.Limit, maxFormListLimit)
-		if limit < 1 {
-			limit = defaultFormListLimit
-		}
-	}
+	return r.listFormsForOwner(ctx, sess.AccountID, sort, cursor, limit)
+}
 
-	fetchLimit := limit + 1
-	var rows []*fc.FormListItem
-	var err error
-
-	var siteId int64
-	if req.Params.SiteId != nil {
-		siteId = *req.Params.SiteId
-	}
-
-	if siteId > 0 {
-		// Faster path
-		site, err := r.sites.GetSiteConfigById(ctx, siteId)
-		if err != nil {
-			return nil, err
-		}
-
-		if site == nil || site.OwnerId != session.AccountID {
-			return api.ListForms200JSONResponse{Items: nil}, nil
-		}
-
-		var afterID int64
-
-		var cursor string
-		if req.Params.Cursor != nil {
-			cursor = *req.Params.Cursor
-		}
-
-		if len(cursor) > 0 {
-			afterID, err = cursors.DecodeIDCursor(cursor)
-			if err != nil {
-				return listFormsBadRequest, nil
-			}
-		}
-
-		rows, err = r.forms.ListFormsBySiteID(ctx, *req.Params.SiteId, afterID, fetchLimit)
-	} else {
-		var afterID int64
-		var afterSiteID int64
-		var afterHostname string
-
-		var cursor string
-		if req.Params.Cursor != nil {
-			cursor = *req.Params.Cursor
-		}
-
-		if len(cursor) > 0 {
-			switch sort {
-			case api.ListFormsParamsSortSiteId:
-				afterSiteID, afterID, err = cursors.DecodeSiteIDCursor(cursor)
-			case api.ListFormsParamsSortHostname:
-				afterHostname, afterID, err = cursors.DecodeHostnameCursor(cursor)
-			case api.ListFormsParamsSortId:
-				afterID, err = cursors.DecodeIDCursor(cursor)
-			default:
-				return listFormsBadRequest, nil
-			}
-
-			if err != nil {
-				return listFormsBadRequest, nil
-			}
-		}
-
-		rows, err = r.forms.ListFormsByOwnerID(ctx, session.AccountID, string(sort), afterID, afterSiteID, afterHostname, fetchLimit)
-	}
-
+func (r *apiV1Router) listFormsForSite(ctx context.Context, accountID, siteID int64, cursor string, limit int) (api.ListFormsResponseObject, error) {
+	site, err := r.sites.GetSiteConfigById(ctx, siteID)
 	if err != nil {
 		return nil, err
 	}
 
+	if site == nil || site.OwnerId != accountID {
+		return api.ListForms200JSONResponse{Items: nil}, nil
+	}
+
+	var afterID int64
+	if len(cursor) > 0 {
+		afterID, err = cursors.DecodeIDCursor(cursor)
+		if err != nil {
+			return listFormsBadRequest, nil
+		}
+	}
+
+	rows, err := r.forms.ListFormsBySiteID(ctx, siteID, afterID, limit+1)
+	if err != nil {
+		return nil, err
+	}
+
+	return formListPage(rows, limit, api.ListFormsParamsSortId), nil
+}
+
+func (r *apiV1Router) listFormsForOwner(ctx context.Context, accountID int64, sort api.ListFormsParamsSort, cursor string, limit int) (api.ListFormsResponseObject, error) {
+	var afterID int64
+	var afterSiteID int64
+	var afterHostname string
+	var err error
+
+	if len(cursor) > 0 {
+		switch sort {
+		case api.ListFormsParamsSortSiteId:
+			afterSiteID, afterID, err = cursors.DecodeSiteIDCursor(cursor)
+		case api.ListFormsParamsSortHostname:
+			afterHostname, afterID, err = cursors.DecodeHostnameCursor(cursor)
+		case api.ListFormsParamsSortId:
+			afterID, err = cursors.DecodeIDCursor(cursor)
+		default:
+			return listFormsBadRequest, nil
+		}
+
+		if err != nil {
+			return listFormsBadRequest, nil
+		}
+	}
+
+	rows, err := r.forms.ListFormsByOwnerID(ctx, accountID, string(sort), afterID, afterSiteID, afterHostname, limit+1)
+	if err != nil {
+		return nil, err
+	}
+
+	return formListPage(rows, limit, sort), nil
+}
+
+func formListPage(rows []*fc.FormListItem, limit int, sort api.ListFormsParamsSort) api.ListForms200JSONResponse {
 	hasMore := len(rows) > limit
 	if hasMore {
 		rows = rows[:limit]
@@ -167,21 +174,23 @@ func (r *apiV1Router) ListForms(ctx context.Context, req api.ListFormsRequestObj
 	}
 
 	res := api.ListForms200JSONResponse{Items: items}
-	if hasMore && len(rows) > 0 {
-		last := rows[len(rows)-1]
-		var next string
-		switch sort {
-		case api.ListFormsParamsSortSiteId:
-			next = cursors.EncodeSiteIDCursor(last.SiteId, last.Id)
-		case api.ListFormsParamsSortHostname:
-			next = cursors.EncodeHostnameCursor(last.Hostname, last.Id)
-		case api.ListFormsParamsSortId:
-			fallthrough
-		default:
-			next = cursors.EncodeIDCursor(last.Id)
-		}
-		res.NextCursor = &next
+	if !hasMore || len(rows) < 1 {
+		return res
 	}
 
-	return res, nil
+	last := rows[len(rows)-1]
+	next := encodeFormListCursor(sort, last)
+	res.NextCursor = &next
+	return res
+}
+
+func encodeFormListCursor(sort api.ListFormsParamsSort, last *fc.FormListItem) string {
+	switch sort {
+	case api.ListFormsParamsSortSiteId:
+		return cursors.EncodeSiteIDCursor(last.SiteId, last.Id)
+	case api.ListFormsParamsSortHostname:
+		return cursors.EncodeHostnameCursor(last.Hostname, last.Id)
+	default:
+		return cursors.EncodeIDCursor(last.Id)
+	}
 }
