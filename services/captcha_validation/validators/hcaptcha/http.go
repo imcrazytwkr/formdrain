@@ -17,18 +17,22 @@ import (
 )
 
 type hcaptchaValidator struct {
-	secret     string
 	httpClient *http.Client
 }
 
-func NewHcaptchaValidator(secret string, httpClient *http.Client) validators.CaptchaValidator {
+func NewHcaptchaValidator(httpClient *http.Client) validators.CaptchaValidator {
 	return &hcaptchaValidator{
-		secret:     secret,
 		httpClient: httpClient,
 	}
 }
 
-func (v *hcaptchaValidator) Validate(ctx context.Context, responseToken string, hostname string, userIP netip.Addr) error {
+func (v *hcaptchaValidator) Validate(
+	ctx context.Context,
+	secret string,
+	responseToken string,
+	hostname string,
+	userIP netip.Addr,
+) error {
 	log := common.GetLoggerForProvider(ctx, providerHcaptcha, common.ApiFormatHttp)
 
 	if len(responseToken) < 1 {
@@ -36,7 +40,7 @@ func (v *hcaptchaValidator) Validate(ctx context.Context, responseToken string, 
 	}
 
 	payload := url.Values{}
-	payload.Set("secret", v.secret)
+	payload.Set("secret", secret)
 	payload.Set("response", responseToken)
 	if userIP.IsValid() {
 		payload.Set("remoteip", userIP.String())

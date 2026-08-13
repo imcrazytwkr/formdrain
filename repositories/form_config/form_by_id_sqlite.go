@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	c "github.com/imcrazytwkr/formdrain/models/common"
 	fc "github.com/imcrazytwkr/formdrain/models/form_config"
 )
 
@@ -52,12 +53,12 @@ func (r *sqliteFormConfigRepository) GetFormConfigById(ctx context.Context, id i
 		return nil, err
 	}
 
-	config.CaptchaType, err = fc.ParseCaptchaType(rawCaptchaType)
+	config.CaptchaType, err = c.ParseCaptchaType(rawCaptchaType)
 	if err != nil {
 		return nil, err
 	}
 
-	if config.CaptchaType == fc.CaptchaTypeUndefined {
+	if config.CaptchaType == c.CaptchaTypeUndefined {
 		return nil, ErrInvalidCaptchaType
 	}
 

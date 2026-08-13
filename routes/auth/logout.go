@@ -54,13 +54,13 @@ func (r *authRouter) HandleLogout(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	origin, _ := maputil.GetString(data, "origin")
+	origin := SanitizeAbsolutePath(maputil.String(data, "origin"))
 	httpserver.HandleRedirect(
 		ctx,
 		w,
 		http.StatusSeeOther,
 		"form/redirect",
-		SanitizeAbsolutePath(origin),
-		map[string]any{"redirect_to": SanitizeAbsolutePath(origin)},
+		origin,
+		map[string]any{"redirect_to": origin},
 	)
 }

@@ -6,5 +6,5 @@ import (
 )
 
 type CaptchaValidator interface {
-	Validate(ctx context.Context, responseToken string, hostname string, userIP netip.Addr) error
+	Validate(ctx context.Context, secret string, responseToken string, hostname string, userIP netip.Addr) error
 }

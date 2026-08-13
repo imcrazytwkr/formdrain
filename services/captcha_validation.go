@@ -4,9 +4,16 @@ import (
 	"context"
 	"net/netip"
 
-	fc "github.com/imcrazytwkr/formdrain/models/form_config"
+	"github.com/imcrazytwkr/formdrain/models/common"
 )
 
 type CaptchaValidationService interface {
-	Validate(ctx context.Context, captchaType fc.CaptchaType, responseToken string, hostname string, userIP netip.Addr) error
+	Validate(
+		ctx context.Context,
+		captchaType common.CaptchaType,
+		secret string,
+		responseToken string,
+		hostname string,
+		userIP netip.Addr,
+	) error
 }

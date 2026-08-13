@@ -3,9 +3,13 @@ package captcha_validation
 import (
 	"fmt"
 
-	fc "github.com/imcrazytwkr/formdrain/models/form_config"
+	"github.com/imcrazytwkr/formdrain/models/common"
 )
 
-func getErrNoCaptchaImpl(captchaType fc.CaptchaType) error {
+func getErrNoCaptchaImpl(captchaType common.CaptchaType) error {
 	return fmt.Errorf("could not find any implementation for catcha type %s", captchaType)
+}
+
+func getErrMissingCaptchaSecret(captchaType common.CaptchaType) error {
+	return fmt.Errorf("missing captcha secret for type %s", captchaType)
 }

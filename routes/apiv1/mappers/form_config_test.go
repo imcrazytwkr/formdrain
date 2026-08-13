@@ -18,7 +18,7 @@ func TestFormConfig_Minimal(t *testing.T) {
 	src := &fc.FormConfig{
 		FormId:        42,
 		SiteId:        7,
-		CaptchaType:   fc.CaptchaTypeHcaptcha,
+		CaptchaType:   common.CaptchaTypeHcaptcha,
 		SchemaVersion: 1,
 		FieldSchema: fc.FieldSchema{
 			Version: 1,
@@ -56,12 +56,12 @@ func TestFormConfig_CaptchaTypes(t *testing.T) {
 
 	cases := []struct {
 		name string
-		src  fc.CaptchaType
+		src  common.CaptchaType
 		want api.CaptchaType
 	}{
-		{"hcaptcha", fc.CaptchaTypeHcaptcha, api.Hcaptcha},
-		{"recaptcha", fc.CaptchaTypeRecaptcha, api.Recaptcha},
-		{"undefined", fc.CaptchaTypeUndefined, api.CaptchaType("undefined")},
+		{"hcaptcha", common.CaptchaTypeHcaptcha, api.Hcaptcha},
+		{"recaptcha", common.CaptchaTypeRecaptcha, api.Recaptcha},
+		{"undefined", common.CaptchaTypeUndefined, api.CaptchaType("undefined")},
 	}
 
 	for _, tc := range cases {
@@ -84,7 +84,7 @@ func TestFormConfig_OptionalScalars(t *testing.T) {
 
 	src := &fc.FormConfig{
 		FormId:       1,
-		CaptchaType:  fc.CaptchaTypeRecaptcha,
+		CaptchaType:  common.CaptchaTypeRecaptcha,
 		CaptchaField: "cf-turnstile-response",
 		RedirectTo:   "https://example.com/thanks",
 	}
@@ -384,7 +384,7 @@ func TestFormConfig_Full(t *testing.T) {
 	src := &fc.FormConfig{
 		FormId:        99,
 		SiteId:        11,
-		CaptchaType:   fc.CaptchaTypeRecaptcha,
+		CaptchaType:   common.CaptchaTypeRecaptcha,
 		CaptchaField:  "g-recaptcha-response",
 		RedirectTo:    "/thanks",
 		SchemaVersion: 2,

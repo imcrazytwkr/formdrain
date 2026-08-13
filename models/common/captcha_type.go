@@ -1,4 +1,4 @@
-package form_config
+package common
 
 import (
 	"encoding/json"

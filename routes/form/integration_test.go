@@ -18,6 +18,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/middleware"
+	"github.com/imcrazytwkr/formdrain/models/common"
 	fc "github.com/imcrazytwkr/formdrain/models/form_config"
 	m "github.com/imcrazytwkr/formdrain/models/http"
 	fcr "github.com/imcrazytwkr/formdrain/repositories/form_config"
@@ -34,7 +35,8 @@ type fakeCaptcha struct {
 
 func (f *fakeCaptcha) Validate(
 	_ context.Context,
-	_ fc.CaptchaType,
+	_ common.CaptchaType,
+	_ string,
 	_ string,
 	_ string,
 	_ netip.Addr,

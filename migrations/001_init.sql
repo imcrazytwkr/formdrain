@@ -20,7 +20,9 @@ CREATE UNIQUE INDEX unique_account_email ON accounts (email);
 CREATE TABLE sites (
   id INTEGER PRIMARY KEY,
   hostname TEXT NOT NULL,
-  owner_id INTEGER NOT NULL REFERENCES accounts (id)
+  owner_id INTEGER NOT NULL REFERENCES accounts (id),
+  hcaptcha_secret TEXT,
+  recaptcha_secret TEXT
 ) STRICT;
 
 CREATE TABLE forms (

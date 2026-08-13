@@ -17,7 +17,7 @@ func NewSqliteSiteConfigRepository(db *sql.DB) repositories.SiteConfigRepository
 	return &sqliteSiteConfigRepository{db: db}
 }
 
-const selectSiteConfigById = `SELECT hostname, owner_id FROM sites WHERE id = ?`
+const selectSiteConfigById = `SELECT hostname, owner_id, hcaptcha_secret, recaptcha_secret FROM sites WHERE id = ?`
 
 func (r *sqliteSiteConfigRepository) GetSiteConfigById(ctx context.Context, id int64) (*site_config.SiteConfig, error) {
 	if id < 1 {
@@ -25,7 +25,14 @@ func (r *sqliteSiteConfigRepository) GetSiteConfigById(ctx context.Context, id i
 	}
 
 	var config site_config.SiteConfig
-	err := r.db.QueryRowContext(ctx, selectSiteConfigById, id).Scan(&config.Hostname, &config.OwnerId)
+	var hcaptchaSecret sql.NullString
+	var recaptchaSecret sql.NullString
+	err := r.db.QueryRowContext(ctx, selectSiteConfigById, id).Scan(
+		&config.Hostname,
+		&config.OwnerId,
+		&hcaptchaSecret,
+		&recaptchaSecret,
+	)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
@@ -36,11 +43,12 @@ func (r *sqliteSiteConfigRepository) GetSiteConfigById(ctx context.Context, id i
 	}
 
 	config.SiteId = id
+	applyCaptchaSecrets(&config, hcaptchaSecret, recaptchaSecret)
 	return &config, nil
 }
 
 const listCommon = `
-SELECT id, hostname, owner_id
+SELECT id, hostname, owner_id, hcaptcha_secret, recaptcha_secret
 FROM sites
 `
 
@@ -102,13 +110,31 @@ func scanSiteConfigs(rows *sql.Rows) ([]*site_config.SiteConfig, error) {
 	out := make([]*site_config.SiteConfig, 0)
 	for rows.Next() {
 		var cfg site_config.SiteConfig
-		if err := rows.Scan(&cfg.SiteId, &cfg.Hostname, &cfg.OwnerId); err != nil {
+		var hcaptchaSecret sql.NullString
+		var recaptchaSecret sql.NullString
+		if err := rows.Scan(
+			&cfg.SiteId,
+			&cfg.Hostname,
+			&cfg.OwnerId,
+			&hcaptchaSecret,
+			&recaptchaSecret,
+		); err != nil {
 			return nil, err
 		}
+		applyCaptchaSecrets(&cfg, hcaptchaSecret, recaptchaSecret)
 		out = append(out, &cfg)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	return out, nil
+}
+
+func applyCaptchaSecrets(cfg *site_config.SiteConfig, hcaptchaSecret, recaptchaSecret sql.NullString) {
+	if hcaptchaSecret.Valid {
+		cfg.HcaptchaSecret = hcaptchaSecret.String
+	}
+	if recaptchaSecret.Valid {
+		cfg.RecaptchaSecret = recaptchaSecret.String
+	}
 }

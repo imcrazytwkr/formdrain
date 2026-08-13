@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/imcrazytwkr/formdrain/constants"
-	fc "github.com/imcrazytwkr/formdrain/models/form_config"
+	"github.com/imcrazytwkr/formdrain/models/common"
 	"github.com/imcrazytwkr/formdrain/utils/testutil"
 	"github.com/rs/zerolog"
 )
@@ -17,7 +17,7 @@ func TestValidate_UnknownType(t *testing.T) {
 	t.Parallel()
 
 	svc := NewHttpCaptchaValidationService(&http.Client{}, &zerolog.Logger{})
-	err := svc.Validate(t.Context(), fc.CaptchaTypeUndefined, "", "example.com", netip.Addr{})
+	err := svc.Validate(t.Context(), common.CaptchaTypeUndefined, "secret", "", "example.com", netip.Addr{})
 	if err == nil || !strings.Contains(err.Error(), "catcha type") {
 		t.Fatalf("err = %v", err)
 	}
@@ -39,7 +39,8 @@ func TestValidate_HcaptchaHappyPath(t *testing.T) {
 	svc := NewHttpCaptchaValidationService(client, &zerolog.Logger{})
 	err := svc.Validate(
 		t.Context(),
-		fc.CaptchaTypeHcaptcha,
+		common.CaptchaTypeHcaptcha,
+		"secret",
 		"tok",
 		"example.com",
 		netip.MustParseAddr("1.2.3.4"),
@@ -65,12 +66,23 @@ func TestValidate_HcaptchaNotPassed(t *testing.T) {
 	svc := NewHttpCaptchaValidationService(client, &zerolog.Logger{})
 	err := svc.Validate(
 		t.Context(),
-		fc.CaptchaTypeHcaptcha,
+		common.CaptchaTypeHcaptcha,
+		"secret",
 		"tok",
 		"example.com",
 		netip.Addr{},
 	)
 	if err != constants.ErrCaptchaNotPassed {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestValidate_MissingSecret(t *testing.T) {
+	t.Parallel()
+
+	svc := NewHttpCaptchaValidationService(&http.Client{}, &zerolog.Logger{})
+	err := svc.Validate(t.Context(), common.CaptchaTypeHcaptcha, "", "tok", "example.com", netip.Addr{})
+	if err == nil || !strings.Contains(err.Error(), "missing captcha secret") {
 		t.Fatalf("err = %v", err)
 	}
 }

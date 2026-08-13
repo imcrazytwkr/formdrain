@@ -25,8 +25,8 @@ func jsonResponse(status int, body string) *http.Response {
 func TestValidate_MissingToken(t *testing.T) {
 	t.Parallel()
 
-	v := hcaptcha.NewHcaptchaValidator("secret", &http.Client{})
-	err := v.Validate(t.Context(), "", "example.com", netip.Addr{})
+	v := hcaptcha.NewHcaptchaValidator(&http.Client{})
+	err := v.Validate(t.Context(), "secret", "", "example.com", netip.Addr{})
 	if !errors.Is(err, constants.ErrCaptchaNotPassed) {
 		t.Fatalf("err = %v", err)
 	}
@@ -60,8 +60,8 @@ func TestValidate_Success(t *testing.T) {
 		}),
 	}
 
-	v := hcaptcha.NewHcaptchaValidator("sec", client)
-	err := v.Validate(t.Context(), "tok", "example.com", netip.MustParseAddr("1.2.3.4"))
+	v := hcaptcha.NewHcaptchaValidator(client)
+	err := v.Validate(t.Context(), "sec", "tok", "example.com", netip.MustParseAddr("1.2.3.4"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,8 +80,8 @@ func TestValidate_SuccessWithBOM(t *testing.T) {
 		}),
 	}
 
-	v := hcaptcha.NewHcaptchaValidator("sec", client)
-	if err := v.Validate(t.Context(), "tok", "example.com", netip.Addr{}); err != nil {
+	v := hcaptcha.NewHcaptchaValidator(client)
+	if err := v.Validate(t.Context(), "sec", "tok", "example.com", netip.Addr{}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -95,8 +95,8 @@ func TestValidate_NotPassed(t *testing.T) {
 		}),
 	}
 
-	v := hcaptcha.NewHcaptchaValidator("sec", client)
-	err := v.Validate(t.Context(), "tok", "example.com", netip.Addr{})
+	v := hcaptcha.NewHcaptchaValidator(client)
+	err := v.Validate(t.Context(), "sec", "tok", "example.com", netip.Addr{})
 	if !errors.Is(err, constants.ErrCaptchaNotPassed) {
 		t.Fatalf("err = %v", err)
 	}
@@ -111,8 +111,8 @@ func TestValidate_HostnameMismatch(t *testing.T) {
 		}),
 	}
 
-	v := hcaptcha.NewHcaptchaValidator("sec", client)
-	err := v.Validate(t.Context(), "tok", "example.com", netip.Addr{})
+	v := hcaptcha.NewHcaptchaValidator(client)
+	err := v.Validate(t.Context(), "sec", "tok", "example.com", netip.Addr{})
 	if !errors.Is(err, constants.ErrCaptchaNotPassed) {
 		t.Fatalf("err = %v", err)
 	}
@@ -127,8 +127,8 @@ func TestValidate_EmptyHostnameAllowed(t *testing.T) {
 		}),
 	}
 
-	v := hcaptcha.NewHcaptchaValidator("sec", client)
-	if err := v.Validate(t.Context(), "tok", "example.com", netip.Addr{}); err != nil {
+	v := hcaptcha.NewHcaptchaValidator(client)
+	if err := v.Validate(t.Context(), "sec", "tok", "example.com", netip.Addr{}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -142,8 +142,8 @@ func TestValidate_NonOKStatus(t *testing.T) {
 		}),
 	}
 
-	v := hcaptcha.NewHcaptchaValidator("sec", client)
-	err := v.Validate(t.Context(), "tok", "example.com", netip.Addr{})
+	v := hcaptcha.NewHcaptchaValidator(client)
+	err := v.Validate(t.Context(), "sec", "tok", "example.com", netip.Addr{})
 	if err == nil || !strings.Contains(err.Error(), "502") {
 		t.Fatalf("err = %v", err)
 	}
@@ -158,8 +158,8 @@ func TestValidate_MalformedJSON(t *testing.T) {
 		}),
 	}
 
-	v := hcaptcha.NewHcaptchaValidator("sec", client)
-	err := v.Validate(t.Context(), "tok", "example.com", netip.Addr{})
+	v := hcaptcha.NewHcaptchaValidator(client)
+	err := v.Validate(t.Context(), "sec", "tok", "example.com", netip.Addr{})
 	if err == nil || !strings.Contains(err.Error(), "malformed body") {
 		t.Fatalf("err = %v", err)
 	}

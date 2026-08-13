@@ -3,7 +3,7 @@ package form_config_test
 import (
 	"testing"
 
-	"github.com/imcrazytwkr/formdrain/models/form_config"
+	c "github.com/imcrazytwkr/formdrain/models/common"
 	fcr "github.com/imcrazytwkr/formdrain/repositories/form_config"
 	"github.com/imcrazytwkr/formdrain/utils/testutil"
 )
@@ -41,7 +41,7 @@ func TestGetFormConfigById(t *testing.T) {
 	if got.FormId != 10 || got.SiteId != 1 {
 		t.Fatalf("ids: got form=%d site=%d", got.FormId, got.SiteId)
 	}
-	if got.CaptchaType != form_config.CaptchaTypeHcaptcha {
+	if got.CaptchaType != c.CaptchaTypeHcaptcha {
 		t.Fatalf("captcha: got %v", got.CaptchaType)
 	}
 	if got.CaptchaField != "" {

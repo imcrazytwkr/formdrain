@@ -17,18 +17,22 @@ import (
 )
 
 type recaptchaValidator struct {
-	secret string
 	client *http.Client
 }
 
-func NewRecaptchaValidator(secret string, client *http.Client) validators.CaptchaValidator {
+func NewRecaptchaValidator(client *http.Client) validators.CaptchaValidator {
 	return &recaptchaValidator{
-		secret: secret,
 		client: client,
 	}
 }
 
-func (v *recaptchaValidator) Validate(ctx context.Context, responseToken string, hostname string, userIP netip.Addr) error {
+func (v *recaptchaValidator) Validate(
+	ctx context.Context,
+	secret string,
+	responseToken string,
+	hostname string,
+	userIP netip.Addr,
+) error {
 	log := common.GetLoggerForProvider(ctx, providerRecaptcha, common.ApiFormatHttp)
 
 	if len(responseToken) < 1 {
@@ -36,7 +40,7 @@ func (v *recaptchaValidator) Validate(ctx context.Context, responseToken string,
 	}
 
 	payload := url.Values{}
-	payload.Set("secret", v.secret)
+	payload.Set("secret", secret)
 	payload.Set("response", responseToken)
 	if userIP.IsValid() {
 		payload.Set("remoteip", userIP.String())

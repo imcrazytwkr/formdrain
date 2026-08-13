@@ -22,6 +22,9 @@ func TestGetSiteConfigById(t *testing.T) {
 	if got == nil || got.SiteId != 7 || got.Hostname != "forms.example.com" || got.OwnerId != ownerID {
 		t.Fatalf("got %+v want owner_id=%d", got, ownerID)
 	}
+	if got.HcaptchaSecret != "" || got.RecaptchaSecret != "" {
+		t.Fatalf("unset secrets = %+v", got)
+	}
 
 	missing, err := repo.GetSiteConfigById(ctx, 1)
 	if err != nil || missing != nil {
@@ -83,5 +86,39 @@ func TestListByOwnerIDAfterHostname(t *testing.T) {
 	}
 	if len(page) != 1 || page[0].Hostname != "c.example" {
 		t.Fatalf("second page = %#v", page)
+	}
+}
+
+func TestGetSiteConfigById_CaptchaSecrets(t *testing.T) {
+	db := testutil.OpenSqlite(t)
+	ctx := t.Context()
+
+	testutil.SeedSite(t, db, 7, "forms.example.com")
+	_, err := db.Exec(
+		`UPDATE sites SET hcaptcha_secret = ?, recaptcha_secret = ? WHERE id = ?`,
+		"h-secret",
+		"r-secret",
+		7,
+	)
+	if err != nil {
+		t.Fatalf("update secrets: %v", err)
+	}
+
+	repo := scr.NewSqliteSiteConfigRepository(db)
+
+	got, err := repo.GetSiteConfigById(ctx, 7)
+	if err != nil {
+		t.Fatalf("GetSiteConfigById: %v", err)
+	}
+	if got == nil || got.HcaptchaSecret != "h-secret" || got.RecaptchaSecret != "r-secret" {
+		t.Fatalf("got %+v", got)
+	}
+
+	page, err := repo.ListByOwnerIDAfterID(ctx, got.OwnerId, 0, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(page) != 1 || page[0].HcaptchaSecret != "h-secret" || page[0].RecaptchaSecret != "r-secret" {
+		t.Fatalf("list = %#v", page)
 	}
 }

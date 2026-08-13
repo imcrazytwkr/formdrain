@@ -32,10 +32,7 @@ func (r *authRouter) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	email, _ := maputil.GetString(data, "email")
-	password, _ := maputil.GetString(data, "password")
-
-	a, err := r.accountService.Login(ctx, email, password)
+	a, err := r.accountService.Login(ctx, maputil.String(data, "email"), maputil.String(data, "password"))
 	if err != nil {
 		if errors.Is(err, account.ErrInvalidCredentials) {
 			httpserver.HandleError(ctx, w, http.StatusUnauthorized, err)
