@@ -2,6 +2,7 @@ package form
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/httpserver"
@@ -13,17 +14,18 @@ func (r *formRouter) CheckCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		log := zerolog.Ctx(req.Context())
 
-		originHost, err := origin.ParseOriginHost(req)
-		if len(originHost) < 1 {
-			if err != nil {
-				httpserver.HandleError(req.Context(), w, http.StatusForbidden, err)
-			}
-			return
-		}
+		// Necessary for caching purposes
+		w.Header().Set("Vary", constants.HeaderOrigin)
 
-		if err != nil {
-			// Handling invalid Referer header as warning rather than full-blown error
-			log.Warn().Msg(err.Error())
+		originHost, err := origin.ParseOriginHost(req)
+		if err != nil || len(originHost) == 0 {
+			if err != nil {
+				// Handling invalid Referer header as warning rather than full-blown error
+				log.Warn().Err(err).Msg("Failed to parse CORS origin")
+			}
+
+			httpserver.HandleError(req.Context(), w, http.StatusForbidden, errInvalidOrigin)
+			return
 		}
 
 		siteConfig, ok := getSiteConfig(req.Context())
@@ -33,27 +35,20 @@ func (r *formRouter) CheckCORS(next http.Handler) http.Handler {
 			return
 		}
 
-		if originHost != siteConfig.Hostname {
+		if !strings.EqualFold(originHost, siteConfig.Hostname) {
 			log.Warn().Str("request_origin", originHost).Str("expected_origin", siteConfig.Hostname).Msg("CORS origin mismatch")
 			httpserver.HandleError(req.Context(), w, http.StatusForbidden, errInvalidOrigin)
 			return
 		}
 
-		w.Header().Set("Access-Control-Allow-Origin", originHost)
-
-		// First call is Set to clear previous values, if any
-		w.Header().Set("Vary", constants.HeaderOrigin)
-		w.Header().Add("Vary", "Access-Control-Request-Method")
-		w.Header().Add("Vary", "Access-Control-Request-Headers")
-
+		w.Header().Set("Access-Control-Allow-Origin", req.Header.Get(constants.HeaderOrigin))
 		next.ServeHTTP(w, req)
 	})
 }
 
 func (r *formRouter) HandlePreflight(w http.ResponseWriter, req *http.Request) {
-	// First call is Set to clear previous values, if any
-	w.Header().Set("Access-Control-Allow-Methods", http.MethodOptions)
-	w.Header().Add("Access-Control-Allow-Methods", http.MethodPost)
+	w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
+	w.Header().Set("Access-Control-Allow-Headers", constants.HeaderAccept+", "+constants.HeaderContentType)
 
 	w.WriteHeader(http.StatusNoContent)
 }

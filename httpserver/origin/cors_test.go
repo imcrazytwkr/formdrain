@@ -60,7 +60,14 @@ func TestParseOriginHost(t *testing.T) {
 			name:     "origin equals server host",
 			host:     "api.example.com",
 			origin:   "https://api.example.com",
-			wantHost: "",
+			wantHost: "api.example.com",
+		},
+		{
+			name:     "origin referer case insensitive",
+			host:     "api.example.com",
+			origin:   "https://Forms.Example.com",
+			referer:  "https://forms.example.com/contact",
+			wantHost: "Forms.Example.com",
 		},
 		{
 			name:       "invalid origin scheme",

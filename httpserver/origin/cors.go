@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/imcrazytwkr/formdrain/constants"
 )
@@ -16,9 +17,7 @@ func errInvalidURL(header string) error {
 var ErrOriginMismatch = errors.New("origin and referer headers do not match")
 
 func ParseOriginHost(r *http.Request) (string, error) {
-	serverHost, _ := ParseServerHost(r)
-
-	originHost, err := parseSourceUrl(r, constants.HeaderOrigin, serverHost)
+	originHost, err := parseSourceUrl(r, constants.HeaderOrigin)
 	if err != nil {
 		return "", err
 	}
@@ -28,7 +27,7 @@ func ParseOriginHost(r *http.Request) (string, error) {
 		return "", nil
 	}
 
-	refererHost, err := parseSourceUrl(r, constants.HeaderReferer, serverHost)
+	refererHost, err := parseSourceUrl(r, constants.HeaderReferer)
 	if err != nil {
 		return originHost, err
 	}
@@ -38,14 +37,14 @@ func ParseOriginHost(r *http.Request) (string, error) {
 		return originHost, nil
 	}
 
-	if originHost != refererHost {
+	if !strings.EqualFold(originHost, refererHost) {
 		return "", ErrOriginMismatch
 	}
 
 	return originHost, nil
 }
 
-func parseSourceUrl(r *http.Request, header string, serverHost string) (string, error) {
+func parseSourceUrl(r *http.Request, header string) (string, error) {
 	source := r.Header.Get(header)
 	if len(source) < 1 {
 		return "", nil
@@ -58,11 +57,6 @@ func parseSourceUrl(r *http.Request, header string, serverHost string) (string, 
 
 	if len(sourceUrl.Scheme) > 0 && sourceUrl.Scheme != "http" && sourceUrl.Scheme != "https" {
 		return "", errInvalidURL(header)
-	}
-
-	if len(serverHost) > 0 && sourceUrl.Host == serverHost {
-		// Direct request from misconfigured Fetch
-		return "", nil
 	}
 
 	return sourceUrl.Host, nil

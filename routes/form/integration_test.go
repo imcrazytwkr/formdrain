@@ -212,6 +212,9 @@ func TestCreate_JSONHappyPath(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d body = %q", w.Code, w.Body.String())
 	}
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "https://example.com" {
+		t.Fatalf("ACAO = %q", got)
+	}
 	if !strings.Contains(w.Header().Get(constants.HeaderContentType), "application/json") {
 		t.Fatalf("content-type = %q", w.Header().Get(constants.HeaderContentType))
 	}
@@ -332,6 +335,28 @@ func TestCreate_NoOriginSkipsHandler(t *testing.T) {
 	if calls, _ := h.notifier.snapshot(); calls != 0 {
 		t.Fatalf("handler ran without Origin: notify=%d", calls)
 	}
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("status = %d body = %q", w.Code, w.Body.String())
+	}
+}
+
+func TestCreate_SameHostOrigin(t *testing.T) {
+	h := newHarness(t)
+	h.seed(t, 10, "")
+	if _, err := h.db.Exec(`UPDATE sites SET hostname = 'api.example.com' WHERE id = 1`); err != nil {
+		t.Fatalf("update hostname: %v", err)
+	}
+
+	hdr := http.Header{}
+	hdr.Set(constants.HeaderOrigin, "https://api.example.com")
+	hdr.Set(constants.HeaderAccept, m.ContentTypeJSON.String())
+	w := h.postJSON(t, "10", `{"email":"a@b.c","h-captcha":"tok"}`, hdr)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %q", w.Code, w.Body.String())
+	}
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "https://api.example.com" {
+		t.Fatalf("ACAO = %q", got)
+	}
 }
 
 func TestCreate_Preflight(t *testing.T) {
@@ -341,19 +366,23 @@ func TestCreate_Preflight(t *testing.T) {
 	req := httptest.NewRequest(http.MethodOptions, "/form/10/", nil)
 	req.Host = "api.example.com"
 	req.Header.Set(constants.HeaderOrigin, "https://example.com")
+	req.Header.Set("Access-Control-Request-Method", http.MethodPost)
+	req.Header.Set("Access-Control-Request-Headers", "content-type, accept")
 	w := httptest.NewRecorder()
 	h.handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusNoContent {
 		t.Fatalf("status = %d", w.Code)
 	}
-	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "example.com" {
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "https://example.com" {
 		t.Fatalf("ACAO = %q", got)
 	}
-	allow := w.Header().Values("Access-Control-Allow-Methods")
-	joined := strings.Join(allow, ",")
-	if !strings.Contains(joined, http.MethodPost) || !strings.Contains(joined, http.MethodOptions) {
-		t.Fatalf("Allow-Methods = %v", allow)
+	if got := w.Header().Get("Access-Control-Allow-Methods"); !strings.EqualFold(got, http.MethodPost) {
+		t.Fatalf("Allow-Methods = %q", got)
+	}
+	allowHeaders := strings.ToLower(w.Header().Get("Access-Control-Allow-Headers"))
+	if !strings.Contains(allowHeaders, "accept") || !strings.Contains(allowHeaders, "content-type") {
+		t.Fatalf("Allow-Headers = %q", w.Header().Get("Access-Control-Allow-Headers"))
 	}
 }
 
