@@ -21,7 +21,7 @@ type Field struct {
 	Items    *FieldItems `json:"items,omitempty"`
 }
 
-// FieldItems describes homogeneous array element types (MVP: string|number|boolean).
+// FieldItems describes homogeneous array element types (string or number).
 type FieldItems struct {
 	Type FieldType `json:"type"`
 }

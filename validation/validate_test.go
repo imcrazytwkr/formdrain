@@ -91,6 +91,47 @@ func TestValidateFormPayload_TypeCoercion(t *testing.T) {
 	}
 }
 
+func TestValidateFormPayload_BooleanOn(t *testing.T) {
+	s := schema(fc.Field{Name: "ok", Type: fc.FieldTypeBoolean, Required: true})
+	for _, v := range []any{"on", "ON", "On"} {
+		got, err := validation.ValidateFormPayload(s, map[string]any{"ok": v})
+		if err != nil {
+			t.Fatalf("%#v: %v", v, err)
+		}
+		if got["ok"] != true {
+			t.Fatalf("%#v: got %#v", v, got)
+		}
+	}
+}
+
+func TestValidateFormPayload_OptionalFalsyOmitted(t *testing.T) {
+	s := schema(fc.Field{Name: "ok", Type: fc.FieldTypeBoolean, Required: false})
+	for _, v := range []any{false, "false", "0", "f", "FALSE"} {
+		got, err := validation.ValidateFormPayload(s, map[string]any{"ok": v})
+		if err != nil {
+			t.Fatalf("%#v: %v", v, err)
+		}
+		if _, ok := got["ok"]; ok {
+			t.Fatalf("%#v: should omit falsy: %#v", v, got)
+		}
+	}
+}
+
+func TestValidateFormPayload_RequiredFalsyMissing(t *testing.T) {
+	s := schema(fc.Field{Name: "ok", Type: fc.FieldTypeBoolean, Required: true})
+	for _, data := range []map[string]any{
+		{},
+		{"ok": false},
+		{"ok": "false"},
+		{"ok": "0"},
+	} {
+		_, err := validation.ValidateFormPayload(s, data)
+		if !errors.Is(err, validation.ErrMissingRequiredField) {
+			t.Fatalf("%#v: got %v", data, err)
+		}
+	}
+}
+
 func TestValidateFormPayload_InvalidType(t *testing.T) {
 	s := schema(fc.Field{Name: "age", Type: fc.FieldTypeNumber, Required: true})
 	_, err := validation.ValidateFormPayload(s, map[string]any{"age": "nope"})
@@ -194,6 +235,19 @@ func TestValidateFormPayload_ArrayMissingItems(t *testing.T) {
 	})
 	_, err := validation.ValidateFormPayload(s, map[string]any{"tags": []any{"a"}})
 	if !errors.Is(err, validation.ErrMissingArrayItemType) {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestValidateFormPayload_BooleanArrayUnsupported(t *testing.T) {
+	s := schema(fc.Field{
+		Name:     "flags",
+		Type:     fc.FieldTypeArray,
+		Required: true,
+		Items:    &fc.FieldItems{Type: fc.FieldTypeBoolean},
+	})
+	_, err := validation.ValidateFormPayload(s, map[string]any{"flags": []any{true}})
+	if !errors.Is(err, validation.ErrUnsupportedItemType) {
 		t.Fatalf("got %v", err)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	fc "github.com/imcrazytwkr/formdrain/models/form_config"
 )
@@ -131,17 +132,30 @@ func normalizeNumber(name string, raw any) (any, error) {
 }
 
 func normalizeBoolean(name string, raw any) (any, error) {
+	b, err := parseBoolean(raw)
+	if err != nil {
+		return nil, fieldErr(name, ErrInvalidFieldType)
+	}
+
+	if !b {
+		return nil, nil
+	}
+
+	return true, nil
+}
+
+func parseBoolean(raw any) (bool, error) {
 	switch v := raw.(type) {
 	case bool:
 		return v, nil
 	case string:
-		b, err := strconv.ParseBool(v)
-		if err != nil {
-			return nil, fieldErr(name, ErrInvalidFieldType)
+		if strings.EqualFold(v, "on") {
+			return true, nil
 		}
-		return b, nil
+
+		return strconv.ParseBool(v)
 	default:
-		return nil, fieldErr(name, ErrInvalidFieldType)
+		return false, ErrInvalidFieldType
 	}
 }
 
@@ -152,7 +166,7 @@ func normalizeArray(field fc.Field, raw any) (any, error) {
 
 	itemType := field.Items.Type
 	switch itemType {
-	case fc.FieldTypeString, fc.FieldTypeNumber, fc.FieldTypeBoolean:
+	case fc.FieldTypeString, fc.FieldTypeNumber:
 		// ok
 	default:
 		return nil, fieldErr(field.Name, ErrUnsupportedItemType)
@@ -178,8 +192,6 @@ func normalizeArray(field fc.Field, raw any) (any, error) {
 			normalized, err = normalizeString(field.Name, el)
 		case fc.FieldTypeNumber:
 			normalized, err = normalizeNumber(field.Name, el)
-		case fc.FieldTypeBoolean:
-			normalized, err = normalizeBoolean(field.Name, el)
 		}
 		if err != nil {
 			return nil, fieldErr(field.Name, ErrInvalidArrayItems)
