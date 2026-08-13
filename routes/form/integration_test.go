@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/middleware"
 	"github.com/imcrazytwkr/formdrain/models/common"
@@ -238,11 +239,24 @@ func TestCreate_JSONHappyPath(t *testing.T) {
 		t.Fatal("expected one stored response")
 	}
 
+	var body map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("json: %v body=%q", err, w.Body.String())
+	}
+	responseID, _ := body["response_id"].(string)
+	if uuid.Validate(responseID) != nil {
+		t.Fatalf("response_id = %#v", body["response_id"])
+	}
+
+	var storedID string
 	var clientIP string
 	var payload string
-	err := h.db.QueryRow(`SELECT client_ip, payload FROM form_responses WHERE form_id = 10`).Scan(&clientIP, &payload)
+	err := h.db.QueryRow(`SELECT id, client_ip, payload FROM form_responses WHERE form_id = 10`).Scan(&storedID, &clientIP, &payload)
 	if err != nil {
 		t.Fatalf("select: %v", err)
+	}
+	if storedID != responseID {
+		t.Fatalf("stored id = %q response_id = %q", storedID, responseID)
 	}
 	if clientIP != "203.0.113.10" {
 		t.Fatalf("client_ip = %q", clientIP)

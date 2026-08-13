@@ -107,5 +107,7 @@ func (r *formRouter) HandleCreateForm(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	httpserver.HandleResponse(ctx, w, http.StatusOK, "form/success", map[string]any{})
+	httpserver.HandleResponse(ctx, w, http.StatusOK, "form/success", map[string]any{
+		"response_id": responseId,
+	})
 }
