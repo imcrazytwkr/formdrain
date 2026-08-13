@@ -162,6 +162,9 @@ func normalizeArray(field fc.Field, raw any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(elements) == 0 {
+		return nil, nil
+	}
 
 	out := make([]any, 0, len(elements))
 	for _, el := range elements {

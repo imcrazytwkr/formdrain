@@ -135,6 +135,42 @@ func TestValidateFormPayload_ArrayFromFormSlice(t *testing.T) {
 	}
 }
 
+func TestValidateFormPayload_RequiredEmptyArray(t *testing.T) {
+	s := schema(fc.Field{
+		Name:     "tags",
+		Type:     fc.FieldTypeArray,
+		Required: true,
+		Items:    &fc.FieldItems{Type: fc.FieldTypeString},
+	})
+
+	_, err := validation.ValidateFormPayload(s, map[string]any{"tags": []any{}})
+	if !errors.Is(err, validation.ErrMissingRequiredField) {
+		t.Fatalf("[]any{}: %v", err)
+	}
+
+	_, err = validation.ValidateFormPayload(s, map[string]any{"tags": []string{}})
+	if !errors.Is(err, validation.ErrMissingRequiredField) {
+		t.Fatalf("[]string{}: %v", err)
+	}
+}
+
+func TestValidateFormPayload_OptionalEmptyArrayOmitted(t *testing.T) {
+	s := schema(fc.Field{
+		Name:     "tags",
+		Type:     fc.FieldTypeArray,
+		Required: false,
+		Items:    &fc.FieldItems{Type: fc.FieldTypeString},
+	})
+
+	got, err := validation.ValidateFormPayload(s, map[string]any{"tags": []any{}})
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if _, ok := got["tags"]; ok {
+		t.Fatalf("empty optional array should be omitted: %#v", got)
+	}
+}
+
 func TestValidateFormPayload_ArrayHomogeneity(t *testing.T) {
 	s := schema(fc.Field{
 		Name:     "nums",
