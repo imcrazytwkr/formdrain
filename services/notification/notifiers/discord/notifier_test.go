@@ -8,7 +8,7 @@ import (
 
 	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/models/common"
-	mcfg "github.com/imcrazytwkr/formdrain/models/config"
+	"github.com/imcrazytwkr/formdrain/models/config"
 	"github.com/imcrazytwkr/formdrain/models/form_config/discord"
 	dn "github.com/imcrazytwkr/formdrain/services/notification/notifiers/discord"
 	"github.com/imcrazytwkr/formdrain/utils/testutil"
@@ -39,7 +39,7 @@ func TestSend_Success(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	n := dn.NewDiscordNotifier(mcfg.DiscordConfig{Username: "bot", AvatarURL: "https://avatar"}, client)
+	n := dn.NewDiscordNotifier(config.DiscordConfig{Username: "bot", AvatarURL: "https://avatar"}, client)
 	err = n.Send(t.Context(), &discord.DiscordConfig{
 		Webhooks: []*discord.WebhookKey{{Snowflake: "123", Token: "tok"}},
 		Title:    "t",
@@ -69,7 +69,7 @@ func TestSend_SuccessStatusOK(t *testing.T) {
 		}),
 	}
 
-	n := dn.NewDiscordNotifier(mcfg.DiscordConfig{Username: "bot", AvatarURL: "avatar"}, client)
+	n := dn.NewDiscordNotifier(config.DiscordConfig{Username: "bot", AvatarURL: "avatar"}, client)
 	err := n.Send(t.Context(), &discord.DiscordConfig{
 		Webhooks: []*discord.WebhookKey{{Snowflake: "1", Token: "t"}},
 		Template: mustTemplate(t, "hi"),
@@ -82,7 +82,7 @@ func TestSend_SuccessStatusOK(t *testing.T) {
 func TestSend_NoWebhooks(t *testing.T) {
 	t.Parallel()
 
-	n := dn.NewDiscordNotifier(mcfg.DiscordConfig{Username: "bot", AvatarURL: "avatar"}, &http.Client{})
+	n := dn.NewDiscordNotifier(config.DiscordConfig{Username: "bot", AvatarURL: "avatar"}, &http.Client{})
 	err := n.Send(t.Context(), &discord.DiscordConfig{
 		Webhooks: nil,
 		Template: mustTemplate(t, "x"),
@@ -105,7 +105,7 @@ func TestSend_HTTPError(t *testing.T) {
 		}),
 	}
 
-	n := dn.NewDiscordNotifier(mcfg.DiscordConfig{Username: "bot", AvatarURL: "avatar"}, client)
+	n := dn.NewDiscordNotifier(config.DiscordConfig{Username: "bot", AvatarURL: "avatar"}, client)
 	err := n.Send(t.Context(), &discord.DiscordConfig{
 		Webhooks: []*discord.WebhookKey{{Snowflake: "1", Token: "t"}},
 		Template: mustTemplate(t, "hi"),

@@ -9,7 +9,7 @@ import (
 
 	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/models/common"
-	mcfg "github.com/imcrazytwkr/formdrain/models/config"
+	"github.com/imcrazytwkr/formdrain/models/config"
 	"github.com/imcrazytwkr/formdrain/models/form_config/brevo"
 	bn "github.com/imcrazytwkr/formdrain/services/notification/notifiers/brevo"
 	"github.com/imcrazytwkr/formdrain/utils/testutil"
@@ -43,7 +43,7 @@ func TestSend_Success(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	n := bn.NewBrevoNotifier(mcfg.BrevoConfig{SenderName: "Sender", SenderEmail: "from@example.com"}, "test-api-key", client)
+	n := bn.NewBrevoNotifier(config.BrevoConfig{SenderName: "Sender", SenderEmail: "from@example.com"}, "test-api-key", client)
 	err = n.Send(t.Context(), &brevo.BrevoConfig{
 		Recipients: []*brevo.EmailContact{{Name: "A", Address: "a@b.c"}},
 		Subject:    "subj",
@@ -69,7 +69,7 @@ func TestSend_Success(t *testing.T) {
 func TestSend_NoRecipients(t *testing.T) {
 	t.Parallel()
 
-	n := bn.NewBrevoNotifier(mcfg.BrevoConfig{SenderName: "Sender", SenderEmail: "from@example.com"}, "key", &http.Client{})
+	n := bn.NewBrevoNotifier(config.BrevoConfig{SenderName: "Sender", SenderEmail: "from@example.com"}, "key", &http.Client{})
 	err := n.Send(t.Context(), &brevo.BrevoConfig{
 		Recipients: nil,
 		Template:   mustTemplate(t, "x"),
@@ -82,7 +82,7 @@ func TestSend_NoRecipients(t *testing.T) {
 func TestSend_NotConfigured(t *testing.T) {
 	t.Parallel()
 
-	n := bn.NewBrevoNotifier(mcfg.BrevoConfig{SenderName: "Sender", SenderEmail: "from@example.com"}, "", &http.Client{})
+	n := bn.NewBrevoNotifier(config.BrevoConfig{SenderName: "Sender", SenderEmail: "from@example.com"}, "", &http.Client{})
 	err := n.Send(t.Context(), &brevo.BrevoConfig{
 		Recipients: []*brevo.EmailContact{{Address: "a@b.c"}},
 		Subject:    "s",
@@ -106,7 +106,7 @@ func TestSend_HTTPError(t *testing.T) {
 		}),
 	}
 
-	n := bn.NewBrevoNotifier(mcfg.BrevoConfig{SenderName: "Sender", SenderEmail: "from@example.com"}, "key", client)
+	n := bn.NewBrevoNotifier(config.BrevoConfig{SenderName: "Sender", SenderEmail: "from@example.com"}, "key", client)
 	err := n.Send(t.Context(), &brevo.BrevoConfig{
 		Recipients: []*brevo.EmailContact{{Address: "a@b.c"}},
 		Subject:    "s",
