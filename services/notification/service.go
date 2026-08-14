@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	mcfg "github.com/imcrazytwkr/formdrain/models/config"
 	fc "github.com/imcrazytwkr/formdrain/models/form_config"
 	"github.com/imcrazytwkr/formdrain/services"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers"
@@ -19,10 +20,14 @@ type httpNotificationService struct {
 	brevoNotifier   notifiers.BrevoNotifier
 }
 
-func NewHttpNotificationService(httpClient *http.Client, brevoAPIKey string) services.NotificationService {
+func NewHttpNotificationService(
+	httpClient *http.Client,
+	notifiersCfg mcfg.NotifiersConfig,
+	brevoAPIKey string,
+) services.NotificationService {
 	return &httpNotificationService{
-		discordNotifier: dn.NewDiscordNotifier("discord_username", "discord_avatar", httpClient),
-		brevoNotifier:   bn.NewBrevoNotifier("sender_name", "sender_email", brevoAPIKey, httpClient),
+		discordNotifier: dn.NewDiscordNotifier(notifiersCfg.Discord, httpClient),
+		brevoNotifier:   bn.NewBrevoNotifier(notifiersCfg.Brevo, brevoAPIKey, httpClient),
 	}
 }
 

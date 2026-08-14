@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/imcrazytwkr/formdrain/constants"
+	"github.com/imcrazytwkr/formdrain/models/config"
 	"github.com/imcrazytwkr/formdrain/models/form_config/brevo"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers/brevo/models"
@@ -22,15 +23,14 @@ type brevoNotifier struct {
 }
 
 func NewBrevoNotifier(
-	senderName string,
-	senderEmail string,
+	cfg config.BrevoConfig,
 	apiKey string,
 	client *http.Client,
 ) notifiers.BrevoNotifier {
 	return &brevoNotifier{
 		sender: &brevo.EmailContact{
-			Name:    senderName,
-			Address: senderEmail,
+			Name:    cfg.SenderName,
+			Address: cfg.SenderEmail,
 		},
 		apiKey: apiKey,
 		client: httpclient.WithTransport(client, transports.LimitedTransport(client.Transport, rateLimiter)),

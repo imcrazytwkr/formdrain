@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/httpserver"
 	m "github.com/imcrazytwkr/formdrain/models/http"
 	"github.com/imcrazytwkr/formdrain/models/session"
@@ -14,8 +13,6 @@ import (
 	"github.com/imcrazytwkr/formdrain/utils/bodyparser"
 	"github.com/imcrazytwkr/formdrain/utils/maputil"
 )
-
-const sessionTTL = 24 * time.Hour
 
 func (r *authRouter) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	log := getLoggerForAction(req.Context(), actionLogin)
@@ -46,7 +43,7 @@ func (r *authRouter) HandleLogin(w http.ResponseWriter, req *http.Request) {
 
 	session := &session.Session{
 		AccountID: a.ID,
-		ExpiresAt: time.Now().Add(sessionTTL),
+		ExpiresAt: time.Now().Add(r.config.SessionTTL.Duration()),
 	}
 
 	err = r.sessionRepository.Create(ctx, session)
@@ -55,15 +52,11 @@ func (r *authRouter) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     constants.CookieSession,
-		Value:    session.ID,
-		Path:     "/",
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Expires:  session.ExpiresAt,
-		MaxAge:   max(int(time.Until(session.ExpiresAt).Seconds()), 1),
-	})
+	http.SetCookie(w, r.sessionCookie(
+		session.ID,
+		session.ExpiresAt,
+		max(int(time.Until(session.ExpiresAt).Seconds()), 1),
+	))
 
 	if httpserver.ResponseFormat(w) == m.ContentTypeJSON {
 		httpserver.HandleResponse(ctx, w, http.StatusCreated, "", mappers.User(a))

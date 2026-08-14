@@ -1,0 +1,27 @@
+# **host** must be a valid IP address when set.
+# Empty string binds all interfaces.
+[server]
+host = ""
+port = 8080
+shutdown_timeout = "30s"
+read_header_timeout = "10s"
+
+# **mode** = "trace" | "release". Default is "trace".
+# "release" forces log writes to stdin.
+[log]
+mode = "trace"
+
+# **cookie** = "lax" | "strict" | "none". Default is "lax"
+[auth]
+session_ttl = "24h"
+cookie_secure = false
+cookie_same_site = "lax"
+cookie_domain = ""
+
+[notifiers.discord]
+username = "FormDrain"
+avatar_url = ""
+
+[notifiers.brevo]
+sender_name = "FormDrain"
+sender_email = "noreply@example.com"
