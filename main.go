@@ -68,12 +68,7 @@ func main() {
 	captchaValidationService := cvs.NewHttpCaptchaValidationService(httpClient, &log.Logger)
 	accountService := as.NewService(accountRepository)
 
-	brevoAPIKey, err := getBrevoAPIKey()
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to load Brevo API key")
-	}
-
-	notificationService := ns.NewHttpNotificationService(httpClient, cfg.Notifiers, brevoAPIKey)
+	notificationService := ns.NewHttpNotificationService(httpClient, cfg.Notifiers, getBrevoAPIKey())
 
 	router.Route("/auth",
 		auth.NewAuthRouter(

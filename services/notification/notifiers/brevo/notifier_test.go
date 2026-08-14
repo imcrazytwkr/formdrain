@@ -1,6 +1,7 @@
 package brevo_test
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -75,6 +76,20 @@ func TestSend_NoRecipients(t *testing.T) {
 	}, nil)
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestSend_NotConfigured(t *testing.T) {
+	t.Parallel()
+
+	n := bn.NewBrevoNotifier(mcfg.BrevoConfig{SenderName: "Sender", SenderEmail: "from@example.com"}, "", &http.Client{})
+	err := n.Send(t.Context(), &brevo.BrevoConfig{
+		Recipients: []*brevo.EmailContact{{Address: "a@b.c"}},
+		Subject:    "s",
+		Template:   mustTemplate(t, "hi"),
+	}, map[string]any{})
+	if !errors.Is(err, bn.ErrNotConfigured) {
+		t.Fatalf("err = %v", err)
 	}
 }
 

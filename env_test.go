@@ -27,15 +27,18 @@ func TestGetDBURL(t *testing.T) {
 
 func TestGetBrevoAPIKey(t *testing.T) {
 	t.Setenv("BREVO_API_KEY", "")
-	_, err := getBrevoAPIKey()
-	if err == nil {
-		t.Fatal("expected unset error")
+	if got := getBrevoAPIKey(); got != "" {
+		t.Fatalf("empty: got %q", got)
 	}
 
-	t.Setenv("BREVO_API_KEY", "secret-key")
-	got, err := getBrevoAPIKey()
-	if err != nil || got != "secret-key" {
-		t.Fatalf("got %q err %v", got, err)
+	t.Setenv("BREVO_API_KEY", "  ")
+	if got := getBrevoAPIKey(); got != "" {
+		t.Fatalf("whitespace: got %q", got)
+	}
+
+	t.Setenv("BREVO_API_KEY", "  secret-key  ")
+	if got := getBrevoAPIKey(); got != "secret-key" {
+		t.Fatalf("got %q", got)
 	}
 }
 
