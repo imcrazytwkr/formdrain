@@ -38,6 +38,10 @@ func NewBrevoNotifier(
 }
 
 func (n *brevoNotifier) send(ctx context.Context, request *models.Request) error {
+	if len(n.apiKey) == 0 {
+		return ErrNotConfigured
+	}
+
 	payload, err := json.Marshal(request)
 	if err != nil {
 		return err
