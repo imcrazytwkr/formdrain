@@ -14,7 +14,7 @@ import (
 	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/middleware"
 	"github.com/imcrazytwkr/formdrain/models/account"
-	mcfg "github.com/imcrazytwkr/formdrain/models/config"
+	"github.com/imcrazytwkr/formdrain/models/config"
 	m "github.com/imcrazytwkr/formdrain/models/http"
 	"github.com/imcrazytwkr/formdrain/repositories"
 	ar "github.com/imcrazytwkr/formdrain/repositories/account"
@@ -72,10 +72,10 @@ func loginSession(t *testing.T, h http.Handler) string {
 	return cookies[0].Value
 }
 
-func defaultAuthConfig() mcfg.AuthConfig {
-	return mcfg.AuthConfig{
-		SessionTTL:     mcfg.NewDuration(24 * time.Hour),
-		CookieSameSite: mcfg.NewSameSite(http.SameSiteLaxMode),
+func defaultAuthConfig() config.AuthConfig {
+	return config.AuthConfig{
+		SessionTTL:     config.NewDuration(24 * time.Hour),
+		CookieSameSite: config.NewSameSite(http.SameSiteLaxMode),
 	}
 }
 
@@ -215,10 +215,10 @@ func TestLoginPost_JSONCookieOptions(t *testing.T) {
 
 	router := chi.NewRouter()
 	router.Use(middleware.ResponseFormatParser(m.ContentTypeHTML, m.ContentTypeJSON))
-	router.Route("/auth", auth.NewAuthRouter(sessionRepository, accountService, mcfg.AuthConfig{
-		SessionTTL:     mcfg.NewDuration(time.Hour),
+	router.Route("/auth", auth.NewAuthRouter(sessionRepository, accountService, config.AuthConfig{
+		SessionTTL:     config.NewDuration(time.Hour),
 		CookieSecure:   true,
-		CookieSameSite: mcfg.NewSameSite(http.SameSiteStrictMode),
+		CookieSameSite: config.NewSameSite(http.SameSiteStrictMode),
 		CookieDomain:   "example.com",
 	}).Router)
 

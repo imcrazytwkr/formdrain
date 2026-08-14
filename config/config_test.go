@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/imcrazytwkr/formdrain/config"
-	mcfg "github.com/imcrazytwkr/formdrain/models/config"
+	m "github.com/imcrazytwkr/formdrain/models/config"
 )
 
 const validTOML = `
@@ -43,7 +43,7 @@ func TestParse_Valid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if cfg.Log.Mode != mcfg.LogModeRelease {
+	if cfg.Log.Mode != m.LogModeRelease {
 		t.Fatalf("log.mode = %q", cfg.Log.Mode)
 	}
 	if cfg.Server.Host != "127.0.0.1" || cfg.Server.Port != 3000 {
@@ -76,7 +76,7 @@ sender_email = "forms@example.com"
 		t.Fatal(err)
 	}
 
-	if cfg.Log.Mode != mcfg.LogModeTrace {
+	if cfg.Log.Mode != m.LogModeTrace {
 		t.Fatalf("log.mode = %q", cfg.Log.Mode)
 	}
 	if cfg.Server.Host != "" || cfg.Server.Port != 8080 {
@@ -189,7 +189,7 @@ sender_email = "forms@example.com"
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Log.Mode != mcfg.LogModeTrace {
+	if cfg.Log.Mode != m.LogModeTrace {
 		t.Fatalf("log.mode = %q", cfg.Log.Mode)
 	}
 }
@@ -272,7 +272,7 @@ func TestParse_ExampleFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Server.Port != 8080 || cfg.Log.Mode != mcfg.LogModeTrace || cfg.Notifiers.Discord.Username != "FormDrain" {
+	if cfg.Server.Port != 8080 || cfg.Log.Mode != m.LogModeTrace || cfg.Notifiers.Discord.Username != "FormDrain" {
 		t.Fatalf("example cfg = %+v", cfg)
 	}
 }

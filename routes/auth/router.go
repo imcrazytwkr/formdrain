@@ -15,11 +15,15 @@ type authRouter struct {
 	config            m.AuthConfig
 }
 
-func NewAuthRouter(sessionRepository repositories.SessionRepository, accountService services.AccountService, authCfg m.AuthConfig) routes.RouteContainer {
+func NewAuthRouter(
+	sessionRepository repositories.SessionRepository,
+	accountService services.AccountService,
+	config m.AuthConfig,
+) routes.RouteContainer {
 	return &authRouter{
 		sessionRepository: sessionRepository,
 		accountService:    accountService,
-		config:            authCfg,
+		config:            config,
 	}
 }
 
