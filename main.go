@@ -23,6 +23,7 @@ import (
 	"github.com/imcrazytwkr/formdrain/routes/apiv1"
 	"github.com/imcrazytwkr/formdrain/routes/auth"
 	"github.com/imcrazytwkr/formdrain/routes/form"
+	"github.com/imcrazytwkr/formdrain/routes/health"
 	as "github.com/imcrazytwkr/formdrain/services/account"
 	cvs "github.com/imcrazytwkr/formdrain/services/captcha_validation"
 	ns "github.com/imcrazytwkr/formdrain/services/notification"
@@ -47,7 +48,7 @@ func main() {
 	}
 
 	router := chi.NewRouter()
-	router.Use(middleware.DefaultLogger())
+	router.Use(middleware.LoggerWithConfig(&log.Logger, []string{"/livez", "/readyz"}))
 	router.Use(middleware.RequestId())
 	router.Use(middleware.ResponseFormatParser(mh.ContentTypeHTML, mh.ContentTypeJSON))
 	router.Use(middleware.Recoverer())
@@ -70,12 +71,17 @@ func main() {
 
 	notificationService := ns.NewHttpNotificationService(httpClient, cfg.Notifiers, getBrevoAPIKey())
 
+	// Health router shoud be bounted at root
+	health.NewHealthRouter(sqliteDB).Router(router)
+
 	router.Route("/auth",
 		auth.NewAuthRouter(
 			sessionRepository,
 			accountService,
 			cfg.Auth,
-		).Router)
+		).Router,
+	)
+
 	router.Route("/api/v1",
 		apiv1.NewApiV1Router(
 			sessionRepository,
@@ -83,7 +89,9 @@ func main() {
 			siteConfigRepository,
 			formConfigRepository,
 			formResponseRepository,
-		).Router)
+		).Router,
+	)
+
 	router.Route("/form",
 		form.NewFormRouter(
 			formConfigRepository,
