@@ -420,7 +420,7 @@ func seedSortableForm(t *testing.T, h *apiV1Harness) {
 	_, err := h.db.Exec(`
 		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
 		VALUES (10, 1, 'hcaptcha', ?, 1, '{}');
-	`, `{"version":1,"fields":[{"name":"email","type":"string","required":false},{"name":"age","type":"number","required":false},{"name":"ok","type":"boolean","required":false},{"name":"tags","type":"array","required":false,"items":{"type":"string"}}]}`)
+	`, `{"fields":[{"name":"email","type":"string","required":false},{"name":"age","type":"number","required":false},{"name":"ok","type":"boolean","required":false},{"name":"tags","type":"array","required":false,"items":{"type":"string"}}]}`)
 	if err != nil {
 		t.Fatalf("seed form: %v", err)
 	}

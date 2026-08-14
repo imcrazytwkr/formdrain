@@ -20,7 +20,7 @@ func TestGetFormConfigById(t *testing.T) {
 			1,
 			'hcaptcha',
 			'https://example.com/thanks',
-			'{"version":1,"fields":[{"name":"email","type":"string","required":true}]}',
+			'{"fields":[{"name":"email","type":"string","required":true}]}',
 			1,
 			'{"discord":null,"brevo":null}'
 		);
@@ -93,7 +93,7 @@ func TestGetFormConfigById_InvalidCaptchaType(t *testing.T) {
 	testutil.SeedSite(t, db, 1, "example.com")
 	_, err := db.Exec(`
 		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
-		VALUES (21, 1, 'bogus', '{"version":1,"fields":[]}', 1, '{}');
+		VALUES (21, 1, 'bogus', '{"fields":[]}', 1, '{}');
 	`)
 	if err != nil {
 		t.Fatalf("seed: %v", err)
@@ -112,7 +112,7 @@ func TestGetFormConfigById_CorruptNotifiers(t *testing.T) {
 	testutil.SeedSite(t, db, 1, "example.com")
 	_, err := db.Exec(`
 		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
-		VALUES (22, 1, 'hcaptcha', '{"version":1,"fields":[]}', 1, '"nope"');
+		VALUES (22, 1, 'hcaptcha', '{"fields":[]}', 1, '"nope"');
 	`)
 	if err != nil {
 		t.Fatalf("seed: %v", err)
@@ -131,7 +131,7 @@ func TestGetFormConfigById_CaptchaField(t *testing.T) {
 	testutil.SeedSite(t, db, 1, "example.com")
 	_, err := db.Exec(`
 		INSERT INTO forms (id, site_id, captcha_type, captcha_field, field_schema, schema_version, notifiers)
-		VALUES (30, 1, 'hcaptcha', 'cf-turnstile-response', '{"version":1,"fields":[]}', 1, '{}');
+		VALUES (30, 1, 'hcaptcha', 'cf-turnstile-response', '{"fields":[]}', 1, '{}');
 	`)
 	if err != nil {
 		t.Fatalf("seed: %v", err)

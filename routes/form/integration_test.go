@@ -149,7 +149,7 @@ func (h *harness) seed(t *testing.T, formID int64, redirectTo string) {
 			1,
 			'hcaptcha',
 			?,
-			'{"version":1,"fields":[{"name":"email","type":"string","required":true}]}',
+			'{"fields":[{"name":"email","type":"string","required":true}]}',
 			1,
 			'{"discord":null,"brevo":null}'
 		)

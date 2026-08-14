@@ -10,8 +10,7 @@ const (
 )
 
 type FieldSchema struct {
-	Version int     `json:"version"`
-	Fields  []Field `json:"fields"`
+	Fields []Field `json:"fields"`
 }
 
 type Field struct {

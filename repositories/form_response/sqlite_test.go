@@ -18,7 +18,7 @@ func TestSaveFormResponse(t *testing.T) {
 	testutil.SeedSite(t, db, 1, "example.com")
 	_, err := db.Exec(`
 		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
-		VALUES (10, 1, 'hcaptcha', '{"version":1,"fields":[]}', 3, '{}');
+		VALUES (10, 1, 'hcaptcha', '{"fields":[]}', 3, '{}');
 	`)
 	if err != nil {
 		t.Fatalf("seed: %v", err)
@@ -83,7 +83,7 @@ func TestSaveFormResponse_NoClientIP(t *testing.T) {
 	testutil.SeedSite(t, db, 1, "example.com")
 	_, err := db.Exec(`
 		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
-		VALUES (10, 1, 'hcaptcha', '{"version":1,"fields":[]}', 1, '{}');
+		VALUES (10, 1, 'hcaptcha', '{"fields":[]}', 1, '{}');
 	`)
 	if err != nil {
 		t.Fatalf("seed: %v", err)

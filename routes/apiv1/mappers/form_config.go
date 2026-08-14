@@ -29,8 +29,7 @@ func fieldSchema(src fc.FieldSchema) api.FieldSchema {
 	}
 
 	return api.FieldSchema{
-		Version: src.Version,
-		Fields:  fields,
+		Fields: fields,
 	}
 }
 

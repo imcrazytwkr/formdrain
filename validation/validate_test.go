@@ -10,7 +10,7 @@ import (
 )
 
 func schema(fields ...fc.Field) fc.FieldSchema {
-	return fc.FieldSchema{Version: 1, Fields: fields}
+	return fc.FieldSchema{Fields: fields}
 }
 
 func TestValidateFormPayload_HappyPath(t *testing.T) {

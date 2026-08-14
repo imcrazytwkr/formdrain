@@ -21,8 +21,7 @@ func TestFormConfig_Minimal(t *testing.T) {
 		CaptchaType:   common.CaptchaTypeHcaptcha,
 		SchemaVersion: 1,
 		FieldSchema: fc.FieldSchema{
-			Version: 1,
-			Fields:  nil,
+			Fields: nil,
 		},
 	}
 
@@ -42,9 +41,6 @@ func TestFormConfig_Minimal(t *testing.T) {
 	}
 	if got.SchemaVersion != 1 {
 		t.Fatalf("SchemaVersion = %d, want 1", got.SchemaVersion)
-	}
-	if got.FieldSchema.Version != 1 {
-		t.Fatalf("FieldSchema.Version = %d, want 1", got.FieldSchema.Version)
 	}
 	if len(got.FieldSchema.Fields) != 0 {
 		t.Fatalf("FieldSchema.Fields = %#v, want empty", got.FieldSchema.Fields)
@@ -108,7 +104,6 @@ func TestFormConfig_FieldSchema(t *testing.T) {
 	src := &fc.FormConfig{
 		FormId: 1,
 		FieldSchema: fc.FieldSchema{
-			Version: 3,
 			Fields: []fc.Field{
 				{Name: "email", Type: fc.FieldTypeString, Required: true},
 				{Name: "age", Type: fc.FieldTypeNumber, Required: false},
@@ -128,9 +123,6 @@ func TestFormConfig_FieldSchema(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got.FieldSchema.Version != 3 {
-		t.Fatalf("Version = %d, want 3", got.FieldSchema.Version)
-	}
 	if len(got.FieldSchema.Fields) != 4 {
 		t.Fatalf("len(Fields) = %d, want 4", len(got.FieldSchema.Fields))
 	}
@@ -389,7 +381,6 @@ func TestFormConfig_Full(t *testing.T) {
 		RedirectTo:    "/thanks",
 		SchemaVersion: 2,
 		FieldSchema: fc.FieldSchema{
-			Version: 2,
 			Fields: []fc.Field{
 				{Name: "email", Type: fc.FieldTypeString, Required: true},
 				{

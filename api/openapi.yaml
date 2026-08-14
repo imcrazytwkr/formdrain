@@ -398,11 +398,8 @@ components:
     FieldSchema:
       type: object
       required:
-        - version
         - fields
       properties:
-        version:
-          type: integer
         fields:
           type: array
           items:

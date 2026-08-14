@@ -59,7 +59,7 @@ func SeedForm(t *testing.T, db *sql.DB, formID, siteID int64) {
 
 	_, err := db.Exec(`
 		INSERT INTO forms (id, site_id, captcha_type, field_schema, schema_version, notifiers)
-		VALUES (?, ?, 'hcaptcha', '{"version":1,"fields":[]}', 1, '{}');
+		VALUES (?, ?, 'hcaptcha', '{"fields":[]}', 1, '{}');
 	`, formID, siteID)
 	if err != nil {
 		t.Fatalf("seed form: %v", err)
