@@ -3,6 +3,7 @@ package auth
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/middleware"
+	m "github.com/imcrazytwkr/formdrain/models/config"
 	"github.com/imcrazytwkr/formdrain/repositories"
 	"github.com/imcrazytwkr/formdrain/routes"
 	"github.com/imcrazytwkr/formdrain/services"
@@ -11,12 +12,14 @@ import (
 type authRouter struct {
 	sessionRepository repositories.SessionRepository
 	accountService    services.AccountService
+	config            m.AuthConfig
 }
 
-func NewAuthRouter(sessionRepository repositories.SessionRepository, accountService services.AccountService) routes.RouteContainer {
+func NewAuthRouter(sessionRepository repositories.SessionRepository, accountService services.AccountService, authCfg m.AuthConfig) routes.RouteContainer {
 	return &authRouter{
 		sessionRepository: sessionRepository,
 		accountService:    accountService,
+		config:            authCfg,
 	}
 }
 

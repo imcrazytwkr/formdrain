@@ -39,15 +39,7 @@ func (r *authRouter) HandleLogout(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     constants.CookieSession,
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Expires:  timeEpochStart,
-		MaxAge:   -1,
-	})
+	http.SetCookie(w, r.sessionCookie("", timeEpochStart, -1))
 
 	if httpserver.ResponseFormat(w) == m.ContentTypeJSON {
 		w.WriteHeader(http.StatusNoContent)

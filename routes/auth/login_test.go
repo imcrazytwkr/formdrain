@@ -8,11 +8,13 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/imcrazytwkr/formdrain/constants"
 	"github.com/imcrazytwkr/formdrain/middleware"
 	"github.com/imcrazytwkr/formdrain/models/account"
+	mcfg "github.com/imcrazytwkr/formdrain/models/config"
 	m "github.com/imcrazytwkr/formdrain/models/http"
 	"github.com/imcrazytwkr/formdrain/repositories"
 	ar "github.com/imcrazytwkr/formdrain/repositories/account"
@@ -43,7 +45,7 @@ func newAuthHandler(t *testing.T) (http.Handler, *account.Account, repositories.
 
 	router := chi.NewRouter()
 	router.Use(middleware.ResponseFormatParser(m.ContentTypeHTML, m.ContentTypeJSON))
-	router.Route("/auth", auth.NewAuthRouter(sessionRepository, accountService).Router)
+	router.Route("/auth", auth.NewAuthRouter(sessionRepository, accountService, defaultAuthConfig()).Router)
 
 	return router, account, sessionRepository
 }
@@ -68,6 +70,13 @@ func loginSession(t *testing.T, h http.Handler) string {
 		t.Fatalf("cookies = %#v", cookies)
 	}
 	return cookies[0].Value
+}
+
+func defaultAuthConfig() mcfg.AuthConfig {
+	return mcfg.AuthConfig{
+		SessionTTL:     mcfg.NewDuration(24 * time.Hour),
+		CookieSameSite: mcfg.NewSameSite(http.SameSiteLaxMode),
+	}
 }
 
 func TestLoginGet_HTMLOrigin(t *testing.T) {
@@ -185,5 +194,53 @@ func TestLoginPost_HTMLRedirect(t *testing.T) {
 	}
 	if cookie := w.Result().Cookies(); len(cookie) < 1 || cookie[0].Name != constants.CookieSession {
 		t.Fatalf("cookies = %#v", w.Result().Cookies())
+	}
+}
+
+func TestLoginPost_JSONCookieOptions(t *testing.T) {
+	db := testutil.OpenSqlite(t)
+	accountRepository := ar.NewSqliteAccountRepository(db)
+	sessionRepository := sr.NewMemorySessionRepository()
+	accountService := as.NewService(accountRepository)
+
+	hash, err := as.HashPassword("correct-password")
+	if err != nil {
+		t.Fatal(err)
+	}
+	acct := &account.Account{Email: "user@example.com", PasswordHash: hash}
+	err = accountRepository.Create(t.Context(), acct)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	router := chi.NewRouter()
+	router.Use(middleware.ResponseFormatParser(m.ContentTypeHTML, m.ContentTypeJSON))
+	router.Route("/auth", auth.NewAuthRouter(sessionRepository, accountService, mcfg.AuthConfig{
+		SessionTTL:     mcfg.NewDuration(time.Hour),
+		CookieSecure:   true,
+		CookieSameSite: mcfg.NewSameSite(http.SameSiteStrictMode),
+		CookieDomain:   "example.com",
+	}).Router)
+
+	payload, _ := json.Marshal(map[string]string{
+		"email":    "user@example.com",
+		"password": "correct-password",
+	})
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/auth/login", bytes.NewReader(payload))
+	req.Header.Set(constants.HeaderAccept, "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("status = %d body=%s", w.Code, w.Body.String())
+	}
+	cookies := w.Result().Cookies()
+	if len(cookies) < 1 {
+		t.Fatal("expected session cookie")
+	}
+	c := cookies[0]
+	if !c.Secure || c.Domain != "example.com" || c.SameSite != http.SameSiteStrictMode {
+		t.Fatalf("cookie = %#v", c)
 	}
 }

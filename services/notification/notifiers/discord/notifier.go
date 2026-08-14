@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/imcrazytwkr/formdrain/constants"
+	"github.com/imcrazytwkr/formdrain/models/config"
 	"github.com/imcrazytwkr/formdrain/models/form_config/discord"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers"
 	"github.com/imcrazytwkr/formdrain/services/notification/notifiers/discord/models"
@@ -17,23 +18,21 @@ import (
 )
 
 type discordNotifier struct {
-	userName string
-	avatar   string
-	client   *http.Client
+	cfg    config.DiscordConfig
+	client *http.Client
 }
 
-func NewDiscordNotifier(userName string, avatar string, client *http.Client) notifiers.DiscordNotifier {
+func NewDiscordNotifier(cfg config.DiscordConfig, client *http.Client) notifiers.DiscordNotifier {
 	return &discordNotifier{
-		userName: userName,
-		avatar:   avatar,
-		client:   httpclient.WithTransport(client, transports.LimitedTransport(client.Transport, rateLimiter)),
+		cfg:    cfg,
+		client: httpclient.WithTransport(client, transports.LimitedTransport(client.Transport, rateLimiter)),
 	}
 }
 
 func (n *discordNotifier) makeRequest(embed *models.Embed) *models.Request {
 	return &models.Request{
-		Username: n.userName,
-		Avatar:   n.avatar,
+		Username: n.cfg.Username,
+		Avatar:   n.cfg.AvatarURL,
 		Embeds:   []*models.Embed{embed},
 	}
 }

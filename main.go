@@ -4,15 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"net"
+	"flag"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/imcrazytwkr/formdrain/config"
 	"github.com/imcrazytwkr/formdrain/middleware"
-	m "github.com/imcrazytwkr/formdrain/models/http"
+	mc "github.com/imcrazytwkr/formdrain/models/config"
+	mh "github.com/imcrazytwkr/formdrain/models/http"
 	ar "github.com/imcrazytwkr/formdrain/repositories/account"
 	fcr "github.com/imcrazytwkr/formdrain/repositories/form_config"
 	frr "github.com/imcrazytwkr/formdrain/repositories/form_response"
@@ -32,24 +34,22 @@ import (
 )
 
 func main() {
-	if os.Getenv("LOG_MODE") == "release" {
+	configPath := flag.String("config", "config.toml", "path to TOML config file")
+	flag.Parse()
+
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to load config")
+	}
+
+	if cfg.Log.Mode == mc.LogModeRelease {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
-	}
-
-	listenHost, err := getHost()
-	if err != nil {
-		log.Fatal().Err(err)
-	}
-
-	listenPort, err := getPort()
-	if err != nil {
-		log.Fatal().Err(err)
 	}
 
 	router := chi.NewRouter()
 	router.Use(middleware.DefaultLogger())
 	router.Use(middleware.RequestId())
-	router.Use(middleware.ResponseFormatParser(m.ContentTypeHTML, m.ContentTypeJSON))
+	router.Use(middleware.ResponseFormatParser(mh.ContentTypeHTML, mh.ContentTypeJSON))
 	router.Use(middleware.Recoverer())
 
 	sqliteDB, err := openSqlite()
@@ -73,12 +73,13 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to load Brevo API key")
 	}
 
-	notificationService := ns.NewHttpNotificationService(httpClient, brevoAPIKey)
+	notificationService := ns.NewHttpNotificationService(httpClient, cfg.Notifiers, brevoAPIKey)
 
 	router.Route("/auth",
 		auth.NewAuthRouter(
 			sessionRepository,
 			accountService,
+			cfg.Auth,
 		).Router)
 	router.Route("/api/v1",
 		apiv1.NewApiV1Router(
@@ -102,8 +103,9 @@ func main() {
 	defer stop()
 
 	srv := &http.Server{
-		Addr:    net.JoinHostPort(listenHost, listenPort),
-		Handler: router,
+		Addr:              cfg.Server.Addr(),
+		Handler:           router,
+		ReadHeaderTimeout: cfg.Server.ReadHeaderTimeout.Duration(),
 	}
 
 	go func() {
@@ -115,7 +117,7 @@ func main() {
 
 	<-ctx.Done()
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), terminationGracePeriod)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout.Duration())
 	defer cancel()
 
 	err = srv.Shutdown(shutdownCtx)
